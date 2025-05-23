@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { LogIn, User, BookOpen, Menu, X } from 'lucide-react';
+import { LogIn, User, BookOpen, Menu, X, UserCircle } from 'lucide-react';
 
 interface NavbarProps {
   user?: {
@@ -41,6 +41,10 @@ const Navbar = ({ user }: NavbarProps) => {
             
             {user ? (
               <>
+                <Link to="/dashboard" className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors">
+                  Личный кабинет
+                </Link>
+                
                 {(user.role === 'teacher' || user.role === 'admin') && (
                   <Link to="/create-course" className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors">
                     Создать курс
@@ -54,7 +58,7 @@ const Navbar = ({ user }: NavbarProps) => {
                 )}
                 
                 <div className="flex items-center space-x-2">
-                  <User className="h-5 w-5 text-gray-600" />
+                  <UserCircle className="h-5 w-5 text-gray-600" />
                   <span className="text-gray-700 text-sm">{user.name}</span>
                   <Button variant="outline" size="sm" onClick={handleLogout}>
                     Выйти
@@ -97,6 +101,10 @@ const Navbar = ({ user }: NavbarProps) => {
               
               {user ? (
                 <>
+                  <Link to="/dashboard" className="block px-3 py-2 text-gray-700 hover:text-blue-600 transition-colors">
+                    Личный кабинет
+                  </Link>
+                  
                   {(user.role === 'teacher' || user.role === 'admin') && (
                     <Link to="/create-course" className="block px-3 py-2 text-gray-700 hover:text-blue-600 transition-colors">
                       Создать курс
@@ -111,7 +119,7 @@ const Navbar = ({ user }: NavbarProps) => {
                   
                   <div className="px-3 py-2 border-t border-gray-200 mt-2">
                     <div className="flex items-center space-x-2 mb-2">
-                      <User className="h-5 w-5 text-gray-600" />
+                      <UserCircle className="h-5 w-5 text-gray-600" />
                       <span className="text-gray-700 text-sm">{user.name}</span>
                     </div>
                     <Button variant="outline" size="sm" onClick={handleLogout} className="w-full">

@@ -7,12 +7,9 @@ import { BookOpen, Users, Award, Clock, ArrowRight, Star, Play } from 'lucide-re
 import Navbar from '@/components/Navbar';
 
 const Index = () => {
-  // Для демонстрации - пользователь не авторизован
-  const currentUser = null;
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-      <Navbar user={currentUser} />
+      <Navbar />
       
       {/* Hero Section */}
       <section className="relative py-20 px-4 sm:px-6 lg:px-8">

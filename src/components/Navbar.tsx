@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { LogIn, User, BookOpen, Menu, X, UserCircle } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
 
 interface NavbarProps {
   user?: {
@@ -14,10 +15,12 @@ interface NavbarProps {
 const Navbar = ({ user }: NavbarProps) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const navigate = useNavigate();
+  const { user: authUser, logout } = useAuth();
+  const currentUser = user ?? authUser;
 
   const handleLogout = () => {
-    // Логика выхода будет добавлена позже
-    console.log('Logout clicked');
+    logout();
+    navigate('/login');
   };
 
   return (
@@ -39,27 +42,27 @@ const Navbar = ({ user }: NavbarProps) => {
               Курсы
             </Link>
             
-            {user ? (
+            {currentUser ? (
               <>
                 <Link to="/dashboard" className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors">
                   Личный кабинет
                 </Link>
-                
-                {(user.role === 'teacher' || user.role === 'admin') && (
+
+                {(currentUser.role === 'teacher' || currentUser.role === 'admin') && (
                   <Link to="/create-course" className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors">
                     Создать курс
                   </Link>
                 )}
-                
-                {user.role === 'admin' && (
+
+                {currentUser.role === 'admin' && (
                   <Link to="/admin" className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors">
                     Админ панель
                   </Link>
                 )}
-                
+
                 <div className="flex items-center space-x-2">
                   <UserCircle className="h-5 w-5 text-gray-600" />
-                  <span className="text-gray-700 text-sm">{user.name}</span>
+                  <span className="text-gray-700 text-sm">{currentUser.name}</span>
                   <Button variant="outline" size="sm" onClick={handleLogout}>
                     Выйти
                   </Button>
@@ -99,28 +102,28 @@ const Navbar = ({ user }: NavbarProps) => {
                 Курсы
               </Link>
               
-              {user ? (
+              {currentUser ? (
                 <>
                   <Link to="/dashboard" className="block px-3 py-2 text-gray-700 hover:text-blue-600 transition-colors">
                     Личный кабинет
                   </Link>
-                  
-                  {(user.role === 'teacher' || user.role === 'admin') && (
+
+                  {(currentUser.role === 'teacher' || currentUser.role === 'admin') && (
                     <Link to="/create-course" className="block px-3 py-2 text-gray-700 hover:text-blue-600 transition-colors">
                       Создать курс
                     </Link>
                   )}
-                  
-                  {user.role === 'admin' && (
+
+                  {currentUser.role === 'admin' && (
                     <Link to="/admin" className="block px-3 py-2 text-gray-700 hover:text-blue-600 transition-colors">
                       Админ панель
                     </Link>
                   )}
-                  
+
                   <div className="px-3 py-2 border-t border-gray-200 mt-2">
                     <div className="flex items-center space-x-2 mb-2">
                       <UserCircle className="h-5 w-5 text-gray-600" />
-                      <span className="text-gray-700 text-sm">{user.name}</span>
+                      <span className="text-gray-700 text-sm">{currentUser.name}</span>
                     </div>
                     <Button variant="outline" size="sm" onClick={handleLogout} className="w-full">
                       Выйти

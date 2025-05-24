@@ -4,13 +4,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { BookOpen, GraduationCap, Briefcase } from 'lucide-react';
 import Navbar from '@/components/Navbar';
+import { useAuth } from '@/context/AuthContext';
 
 const Courses = () => {
-  // Mock user data
-  const user = {
-    name: 'Иван Петров',
-    role: 'student' as const
-  };
+  const { user } = useAuth();
 
   // Mock course data
   const courses = [
@@ -42,14 +39,14 @@ const Courses = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar user={user} />
+      <Navbar />
       <div className="container mx-auto py-12 px-4 sm:px-6 lg:px-8">
         <div className="md:flex md:items-center md:justify-between">
           <div className="mb-4 md:mb-0">
             <h1 className="text-3xl font-bold text-gray-900">Курсы</h1>
             <p className="mt-2 text-gray-600">Выберите курс для начала обучения</p>
           </div>
-          {(user.role === 'teacher' || user.role === 'admin') ? (
+          {user && (user.role === 'teacher' || user.role === 'admin') ? (
             <Link to="/create-course">
               <Button>
                 <Briefcase className="mr-2 h-4 w-4" />

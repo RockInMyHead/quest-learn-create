@@ -22,10 +22,6 @@ const CreateCourse = () => {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
-  const currentUser = {
-    name: 'Мария Сидорова',
-    role: 'teacher' as const
-  };
 
   const handleInputChange = (field: string, value: string) => {
     setCourseData(prev => ({ ...prev, [field]: value }));
@@ -45,7 +41,7 @@ const CreateCourse = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar user={currentUser} />
+      <Navbar />
       
       <div className="max-w-4xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
         <div className="mb-8">

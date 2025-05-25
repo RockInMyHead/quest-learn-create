@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { BookOpen, UserPlus } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -18,6 +19,7 @@ const Register = () => {
   });
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const { register: registerUser } = useAuth();
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -32,14 +34,18 @@ const Register = () => {
     }
 
     setIsLoading(true);
-    
-    // Симуляция регистрации
-    setTimeout(() => {
-      console.log('Registration attempt:', formData);
-      setIsLoading(false);
-      // После интеграции с Supabase здесь будет реальная регистрация
-      navigate('/login');
-    }, 1000);
+    const success = await registerUser({
+      name: formData.name,
+      email: formData.email,
+      password: formData.password,
+      role: formData.role as any,
+    });
+    setIsLoading(false);
+    if (success) {
+      navigate('/dashboard');
+    } else {
+      alert('Пользователь с таким email уже существует');
+    }
   };
 
   return (

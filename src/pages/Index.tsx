@@ -7,12 +7,9 @@ import { BookOpen, Users, Award, Clock, ArrowRight, Star, Play } from 'lucide-re
 import Navbar from '@/components/Navbar';
 
 const Index = () => {
-  // Для демонстрации - пользователь не авторизован
-  const currentUser = null;
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-      <Navbar user={currentUser} />
+      <Navbar />
       
       {/* Hero Section */}
       <section className="relative py-20 px-4 sm:px-6 lg:px-8">
@@ -31,7 +28,11 @@ const Index = () => {
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button size="lg" className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 h-12 px-8">
+              <Button
+                size="lg"
+                asChild
+                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 h-12 px-8"
+              >
                 <Link to="/register" className="flex items-center">
                   Начать обучение
                   <ArrowRight className="ml-2 h-4 w-4" />

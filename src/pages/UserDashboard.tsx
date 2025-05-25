@@ -6,30 +6,32 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { BookOpen, User, Settings, FileText, BarChart3 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
+import { useAuth } from '@/context/AuthContext';
+import { courses } from '@/data/courses';
 
 const UserDashboard = () => {
-  const [userCourses] = useState([
-    { id: 1, title: 'JavaScript для начинающих', progress: 45, instructor: 'Мария Сидорова' },
-    { id: 2, title: 'React.js Продвинутый', progress: 25, instructor: 'Алексей Смирнов' },
-  ]);
+  const { user: currentUser } = useAuth();
+  const userCourses = courses.filter(c => currentUser?.courses.includes(c.id));
 
   const [userAssignments] = useState([
     { id: 1, title: 'Домашнее задание 1', course: 'JavaScript для начинающих', dueDate: '2025-06-01', status: 'pending' },
     { id: 2, title: 'Тест по React', course: 'React.js Продвинутый', dueDate: '2025-05-27', status: 'completed' },
   ]);
 
-  // Mock user for demonstration
-  const currentUser = {
-    name: 'Иван Петров',
-    email: 'ivan@example.com',
-    role: 'student' as const,
-    joinDate: '15.03.2025',
-    avatar: null
-  };
+  if (!currentUser) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Navbar />
+        <div className="max-w-7xl mx-auto py-20 text-center text-gray-700">
+          Для доступа к личному кабинету необходимо войти в систему
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar user={currentUser} />
+      <Navbar />
       
       <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
@@ -143,17 +145,8 @@ const UserDashboard = () => {
                       <div className="flex items-start justify-between">
                         <div>
                           <h3 className="font-medium text-lg">{course.title}</h3>
-                          <p className="text-sm text-gray-600">Преподаватель: {course.instructor}</p>
                         </div>
-                        <Badge variant="secondary">Прогресс: {course.progress}%</Badge>
-                      </div>
-                      <div className="mt-3">
-                        <div className="w-full bg-gray-200 h-2 rounded-full">
-                          <div 
-                            className="bg-blue-600 h-2 rounded-full" 
-                            style={{ width: `${course.progress}%` }}
-                          ></div>
-                        </div>
+                        <Badge variant="secondary">Записан</Badge>
                       </div>
                       <div className="mt-3 flex space-x-2">
                         <Button size="sm">Продолжить</Button>

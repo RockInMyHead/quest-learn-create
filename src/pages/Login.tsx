@@ -6,24 +6,25 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { BookOpen, LogIn } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const { login } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    
-    // Симуляция авторизации
-    setTimeout(() => {
-      console.log('Login attempt:', { email, password });
-      setIsLoading(false);
-      // После интеграции с Supabase здесь будет реальная авторизация
-      navigate('/');
-    }, 1000);
+    const success = await login(email, password);
+    setIsLoading(false);
+    if (success) {
+      navigate('/dashboard');
+    } else {
+      alert('Неверный email или пароль');
+    }
   };
 
   return (

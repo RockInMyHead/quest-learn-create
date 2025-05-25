@@ -4,52 +4,24 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { BookOpen, GraduationCap, Briefcase } from 'lucide-react';
 import Navbar from '@/components/Navbar';
+import { useAuth } from '@/context/AuthContext';
+import { courses } from '@/data/courses';
 
 const Courses = () => {
-  // Mock user data
-  const user = {
-    name: 'Иван Петров',
-    role: 'student' as const
-  };
+  const { user } = useAuth();
 
-  // Mock course data
-  const courses = [
-    {
-      id: 1,
-      title: 'JavaScript для начинающих',
-      description: 'Основы JavaScript для новичков',
-      imageUrl: 'https://via.placeholder.com/400x225',
-      level: 'Начальный',
-      lessons: 12,
-    },
-    {
-      id: 2,
-      title: 'React.js Продвинутый',
-      description: 'Продвинутые техники React.js',
-      imageUrl: 'https://via.placeholder.com/400x225',
-      level: 'Продвинутый',
-      lessons: 15,
-    },
-    {
-      id: 3,
-      title: 'Node.js с нуля',
-      description: 'Создание серверных приложений на Node.js',
-      imageUrl: 'https://via.placeholder.com/400x225',
-      level: 'Средний',
-      lessons: 10,
-    },
-  ];
+  // данные курсов импортируются из отдельного файла
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar user={user} />
+      <Navbar />
       <div className="container mx-auto py-12 px-4 sm:px-6 lg:px-8">
         <div className="md:flex md:items-center md:justify-between">
           <div className="mb-4 md:mb-0">
             <h1 className="text-3xl font-bold text-gray-900">Курсы</h1>
             <p className="mt-2 text-gray-600">Выберите курс для начала обучения</p>
           </div>
-          {(user.role === 'teacher' || user.role === 'admin') ? (
+          {user && (user.role === 'teacher' || user.role === 'admin') ? (
             <Link to="/create-course">
               <Button>
                 <Briefcase className="mr-2 h-4 w-4" />
@@ -78,7 +50,9 @@ const Courses = () => {
                     {course.lessons} уроков
                   </div>
                 </div>
-                <Button className="mt-4 w-full">Подробнее</Button>
+                <Button className="mt-4 w-full" asChild>
+                  <Link to={`/courses/${course.id}`}>Подробнее</Link>
+                </Button>
               </CardContent>
             </Card>
           ))}

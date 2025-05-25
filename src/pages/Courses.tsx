@@ -6,36 +6,13 @@ import { BookOpen, GraduationCap, Briefcase } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import { useAuth } from '@/context/AuthContext';
 
+import { courses } from '@/data/courses';
+
+
 const Courses = () => {
   const { user } = useAuth();
 
-  // Mock course data
-  const courses = [
-    {
-      id: 1,
-      title: 'JavaScript для начинающих',
-      description: 'Основы JavaScript для новичков',
-      imageUrl: 'https://via.placeholder.com/400x225',
-      level: 'Начальный',
-      lessons: 12,
-    },
-    {
-      id: 2,
-      title: 'React.js Продвинутый',
-      description: 'Продвинутые техники React.js',
-      imageUrl: 'https://via.placeholder.com/400x225',
-      level: 'Продвинутый',
-      lessons: 15,
-    },
-    {
-      id: 3,
-      title: 'Node.js с нуля',
-      description: 'Создание серверных приложений на Node.js',
-      imageUrl: 'https://via.placeholder.com/400x225',
-      level: 'Средний',
-      lessons: 10,
-    },
-  ];
+  // данные курсов импортируются из отдельного файла
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -75,7 +52,9 @@ const Courses = () => {
                     {course.lessons} уроков
                   </div>
                 </div>
-                <Button className="mt-4 w-full">Подробнее</Button>
+                <Button className="mt-4 w-full" asChild>
+                  <Link to={`/courses/${course.id}`}>Подробнее</Link>
+                </Button>
               </CardContent>
             </Card>
           ))}

@@ -7,14 +7,18 @@ export interface User {
   email: string;
   role: UserRole;
   joinDate: string;
+
   courses: number[];
+
 }
 
 interface AuthContextValue {
   user: User | null;
   login: (email: string, password: string) => Promise<boolean>;
   register: (data: { name: string; email: string; password: string; role: UserRole }) => Promise<boolean>;
+
   enroll: (courseId: number) => void;
+
   logout: () => void;
 }
 
@@ -35,11 +39,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (users.find((u: any) => u.email === data.email)) {
       return false;
     }
-    const joinDate = new Date().toLocaleDateString('ru-RU');
+    const joinDate = new Date().toLocaleDateStringU');('ru-R
+
     const storedUser = { ...data, joinDate, courses: [] };
     users.push(storedUser);
     localStorage.setItem('users', JSON.stringify(users));
     const currentUser = { name: data.name, email: data.email, role: data.role, joinDate, courses: [] };
+
+    const storedUser = { ...data, joinDate };
+    users.push(storedUser);
+    localStorage.setItem('users', JSON.stringify(users));
+    const currentUser = { name: data.name, email: data.email, role: data.role, joinDate };
+
     localStorage.setItem('currentUser', JSON.stringify(currentUser));
     setUser(currentUser);
     return true;
@@ -49,6 +60,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const users = JSON.parse(localStorage.getItem('users') || '[]');
     const found = users.find((u: any) => u.email === email && u.password === password);
     if (found) {
+
       const currentUser = {
         name: found.name,
         email: found.email,
@@ -56,12 +68,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         joinDate: found.joinDate,
         courses: found.courses || [],
       };
+
+      const currentUser = { name: found.name, email: found.email, role: found.role, joinDate: found.joinDate };
+
       localStorage.setItem('currentUser', JSON.stringify(currentUser));
       setUser(currentUser);
       return true;
     }
     return false;
   };
+
 
   const enroll = (courseId: number) => {
     if (!user) return;
@@ -83,11 +99,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(null);
   };
 
+
   return (
     <AuthContext.Provider value={{ user, login, register, enroll, logout }}>
       {children}
     </AuthContext.Provider>
   );
+
+  return <AuthContext.Provider value={{ user, login, register, logout }}>{children}</AuthContext.Provider>;
+
 };
 
 export const useAuth = () => {

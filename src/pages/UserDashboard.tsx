@@ -7,7 +7,9 @@ import { Badge } from '@/components/ui/badge';
 import { BookOpen, User, Settings, FileText, BarChart3 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import { useAuth } from '@/context/AuthContext';
+
 import { courses } from '@/data/courses';
+
 
 const UserDashboard = () => {
   const { user: currentUser } = useAuth();
@@ -17,6 +19,9 @@ const UserDashboard = () => {
     { id: 1, title: 'Домашнее задание 1', course: 'JavaScript для начинающих', dueDate: '2025-06-01', status: 'pending' },
     { id: 2, title: 'Тест по React', course: 'React.js Продвинутый', dueDate: '2025-05-27', status: 'completed' },
   ]);
+
+
+  const { user: currentUser } = useAuth();
 
   if (!currentUser) {
     return (

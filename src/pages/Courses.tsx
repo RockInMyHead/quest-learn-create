@@ -5,7 +5,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { BookOpen, GraduationCap, Briefcase } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import { useAuth } from '@/context/AuthContext';
+
 import { courses } from '@/data/courses';
+
 
 const Courses = () => {
   const { user } = useAuth();

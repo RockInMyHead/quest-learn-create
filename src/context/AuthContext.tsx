@@ -9,6 +9,7 @@ export interface User {
   role: UserRole;
   joinDate: string;
   courses: number[];
+  completedLessons: { [courseId: number]: number[] };
 }
 
 interface AuthContextValue {
@@ -16,6 +17,7 @@ interface AuthContextValue {
   login: (email: string, password: string) => Promise<boolean>;
   register: (data: { name: string; email: string; password: string; role: UserRole }) => Promise<boolean>;
   enroll: (courseId: number) => void;
+  markLessonCompleted: (courseId: number, lessonId: number) => void;
   logout: () => void;
 }
 
@@ -37,10 +39,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return false;
     }
     const joinDate = new Date().toLocaleDateString('ru-RU');
-    const storedUser = { ...data, joinDate, courses: [] };
+    const storedUser = { ...data, joinDate, courses: [], completedLessons: {} };
     users.push(storedUser);
     localStorage.setItem('users', JSON.stringify(users));
-    const currentUser = { name: data.name, email: data.email, role: data.role, joinDate, courses: [] };
+    const currentUser = { name: data.name, email: data.email, role: data.role, joinDate, courses: [], completedLessons: {} };
     localStorage.setItem('currentUser', JSON.stringify(currentUser));
     setUser(currentUser);
     return true;
@@ -56,6 +58,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         role: found.role,
         joinDate: found.joinDate,
         courses: found.courses || [],
+        completedLessons: found.completedLessons || {},
       };
       localStorage.setItem('currentUser', JSON.stringify(currentUser));
       setUser(currentUser);
@@ -79,13 +82,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.setItem('currentUser', JSON.stringify(updated));
   };
 
+  const markLessonCompleted = (courseId: number, lessonId: number) => {
+    if (!user) return;
+    
+    const completedLessons = { ...user.completedLessons };
+    if (!completedLessons[courseId]) {
+      completedLessons[courseId] = [];
+    }
+    
+    if (!completedLessons[courseId].includes(lessonId)) {
+      completedLessons[courseId].push(lessonId);
+    }
+    
+    const users = JSON.parse(localStorage.getItem('users') || '[]');
+    const index = users.findIndex((u: any) => u.email === user.email);
+    if (index !== -1) {
+      users[index].completedLessons = completedLessons;
+      localStorage.setItem('users', JSON.stringify(users));
+    }
+    
+    const updated = { ...user, completedLessons };
+    setUser(updated);
+    localStorage.setItem('currentUser', JSON.stringify(updated));
+  };
+
   const logout = () => {
     localStorage.removeItem('currentUser');
     setUser(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, register, enroll, logout }}>
+    <AuthContext.Provider value={{ user, login, register, enroll, markLessonCompleted, logout }}>
       {children}
     </AuthContext.Provider>
   );

@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import Navbar from '@/components/Navbar';
 import { courses } from '@/data/courses';
 import { useAuth } from '@/context/AuthContext';
+import { calculateCourseProgress, isLessonCompleted } from '@/utils/courseProgress';
 import { ArrowLeft, ArrowRight, BookOpen, CheckCircle, Play, FileText } from 'lucide-react';
 
 interface Lesson {
@@ -16,13 +17,12 @@ interface Lesson {
   type: 'video' | 'text' | 'quiz';
   content: string;
   duration?: string;
-  completed: boolean;
 }
 
 const CoursePlayer = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, markLessonCompleted } = useAuth();
 
   const course = courses.find((c) => c.id === Number(id));
   
@@ -32,40 +32,35 @@ const CoursePlayer = () => {
       id: 1,
       title: 'Введение в JavaScript',
       type: 'video',
-      content: 'В этом уроке мы изучим основы JavaScript, его историю и применение.',
+      content: 'В этом уроке мы изучим основы JavaScript, его историю и применение. JavaScript — это мощный язык программирования, который используется для создания интерактивных веб-страниц.',
       duration: '15 мин',
-      completed: true,
     },
     {
       id: 2,
       title: 'Переменные и типы данных',
       type: 'text',
-      content: 'Изучаем как объявлять переменные и работать с различными типами данных в JavaScript.',
+      content: 'Изучаем как объявлять переменные и работать с различными типами данных в JavaScript. В JavaScript есть несколько способов объявления переменных: var, let, const.',
       duration: '20 мин',
-      completed: true,
     },
     {
       id: 3,
       title: 'Функции',
       type: 'video',
-      content: 'Как создавать и использовать функции в JavaScript.',
+      content: 'Как создавать и использовать функции в JavaScript. Функции — это блоки кода, которые можно многократно использовать.',
       duration: '25 мин',
-      completed: false,
     },
     {
       id: 4,
       title: 'Тест: Основы JavaScript',
       type: 'quiz',
-      content: 'Проверим ваши знания по основам JavaScript.',
+      content: 'Проверим ваши знания по основам JavaScript. Ответьте на вопросы, чтобы закрепить изученный материал.',
       duration: '10 мин',
-      completed: false,
     },
   ]);
 
   const [currentLessonIndex, setCurrentLessonIndex] = useState(0);
   const currentLesson = lessons[currentLessonIndex];
-  const completedLessons = lessons.filter(l => l.completed).length;
-  const progressPercentage = Math.round((completedLessons / lessons.length) * 100);
+  const progressPercentage = calculateCourseProgress(user, Number(id), lessons.length);
 
   if (!course) {
     return (
@@ -100,6 +95,10 @@ const CoursePlayer = () => {
     if (currentLessonIndex > 0) {
       setCurrentLessonIndex(currentLessonIndex - 1);
     }
+  };
+
+  const handleMarkCompleted = () => {
+    markLessonCompleted(course.id, currentLesson.id);
   };
 
   const getLessonIcon = (type: string) => {
@@ -150,7 +149,7 @@ const CoursePlayer = () => {
               <CardHeader>
                 <CardTitle className="text-lg">Содержание курса</CardTitle>
                 <CardDescription>
-                  {completedLessons} из {lessons.length} уроков завершено
+                  {user?.completedLessons[course.id]?.length || 0} из {lessons.length} уроков завершено
                 </CardDescription>
               </CardHeader>
               <CardContent className="p-0">
@@ -171,7 +170,7 @@ const CoursePlayer = () => {
                             <p className="text-xs text-gray-500">{lesson.duration}</p>
                           </div>
                         </div>
-                        {lesson.completed && (
+                        {isLessonCompleted(user, course.id, lesson.id) && (
                           <CheckCircle className="w-4 h-4 text-green-500" />
                         )}
                       </div>
@@ -199,7 +198,7 @@ const CoursePlayer = () => {
                       </Badge>
                     </CardDescription>
                   </div>
-                  {currentLesson.completed && (
+                  {isLessonCompleted(user, course.id, currentLesson.id) && (
                     <CheckCircle className="w-6 h-6 text-green-500" />
                   )}
                 </div>
@@ -221,6 +220,16 @@ const CoursePlayer = () => {
                     <p className="text-gray-700 leading-relaxed">{currentLesson.content}</p>
                   </div>
                 </div>
+
+                {/* Mark as completed button */}
+                {!isLessonCompleted(user, course.id, currentLesson.id) && (
+                  <div className="mb-6">
+                    <Button onClick={handleMarkCompleted} className="w-full">
+                      <CheckCircle className="w-4 h-4 mr-2" />
+                      Отметить как завершенный
+                    </Button>
+                  </div>
+                )}
 
                 {/* Navigation */}
                 <div className="flex justify-between items-center pt-6 border-t border-gray-200">

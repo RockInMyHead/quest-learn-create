@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,6 +9,7 @@ import { Progress } from '@/components/ui/progress';
 import { BookOpen, User, Settings, FileText, BarChart3, Play } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import { useAuth } from '@/context/AuthContext';
+import { calculateCourseProgress } from '@/utils/courseProgress';
 
 import { courses } from '@/data/courses';
 
@@ -142,40 +144,43 @@ const UserDashboard = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-6">
-                  {userCourses.map(course => (
-                    <div key={course.id} className="p-6 border rounded-lg hover:border-blue-500 transition-all duration-200 bg-white">
-                      <div className="flex items-start justify-between mb-4">
-                        <div className="flex-1">
-                          <h3 className="font-medium text-lg text-gray-900">{course.title}</h3>
-                          <p className="text-sm text-gray-600 mt-1">Преподаватель: {course.teacher}</p>
+                  {userCourses.map(course => {
+                    const progress = calculateCourseProgress(currentUser, course.id, course.lessons);
+                    return (
+                      <div key={course.id} className="p-6 border rounded-lg hover:border-blue-500 transition-all duration-200 bg-white">
+                        <div className="flex items-start justify-between mb-4">
+                          <div className="flex-1">
+                            <h3 className="font-medium text-lg text-gray-900">{course.title}</h3>
+                            <p className="text-sm text-gray-600 mt-1">Преподаватель: {course.teacher}</p>
+                          </div>
+                          <Badge variant="secondary">Записан</Badge>
                         </div>
-                        <Badge variant="secondary">Записан</Badge>
-                      </div>
-                      
-                      <div className="mb-4">
-                        <div className="flex justify-between text-sm mb-2">
-                          <span className="text-gray-600">Прогресс: {course.progress}%</span>
-                          <span className="text-gray-600">{course.lessons} уроков</span>
+                        
+                        <div className="mb-4">
+                          <div className="flex justify-between text-sm mb-2">
+                            <span className="text-gray-600">Прогресс: {progress}%</span>
+                            <span className="text-gray-600">{course.lessons} уроков</span>
+                          </div>
+                          <Progress value={progress} className="h-2" />
                         </div>
-                        <Progress value={course.progress} className="h-2" />
+                        
+                        <div className="flex space-x-3">
+                          <Button size="sm" className="flex-1" asChild>
+                            <Link to={`/courses/${course.id}/learn`}>
+                              <Play className="w-4 h-4 mr-2" />
+                              Продолжить
+                            </Link>
+                          </Button>
+                          <Button size="sm" variant="outline" className="flex-1" asChild>
+                            <Link to={`/courses/${course.id}`}>
+                              <BookOpen className="w-4 h-4 mr-2" />
+                              Подробнее
+                            </Link>
+                          </Button>
+                        </div>
                       </div>
-                      
-                      <div className="flex space-x-3">
-                        <Button size="sm" className="flex-1" asChild>
-                          <Link to={`/courses/${course.id}/learn`}>
-                            <Play className="w-4 h-4 mr-2" />
-                            Продолжить
-                          </Link>
-                        </Button>
-                        <Button size="sm" variant="outline" className="flex-1" asChild>
-                          <Link to={`/courses/${course.id}`}>
-                            <BookOpen className="w-4 h-4 mr-2" />
-                            Подробнее
-                          </Link>
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
                 <div className="mt-6 text-center">
                   <Button variant="ghost" asChild>

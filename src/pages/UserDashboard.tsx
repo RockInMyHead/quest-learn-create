@@ -4,12 +4,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { BookOpen, User, Settings, FileText, BarChart3 } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
+import { BookOpen, User, Settings, FileText, BarChart3, Play } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import { useAuth } from '@/context/AuthContext';
 
 import { courses } from '@/data/courses';
-
 
 const UserDashboard = () => {
   const { user: currentUser } = useAuth();
@@ -19,9 +19,6 @@ const UserDashboard = () => {
     { id: 1, title: 'Домашнее задание 1', course: 'JavaScript для начинающих', dueDate: '2025-06-01', status: 'pending' },
     { id: 2, title: 'Тест по React', course: 'React.js Продвинутый', dueDate: '2025-05-27', status: 'completed' },
   ]);
-
-
-  const { user: currentUser } = useAuth();
 
   if (!currentUser) {
     return (
@@ -144,23 +141,39 @@ const UserDashboard = () => {
                 <CardDescription>Курсы, на которые вы записаны</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
+                <div className="space-y-6">
                   {userCourses.map(course => (
-                    <div key={course.id} className="p-4 border rounded-lg hover:border-blue-500 transition-all duration-200">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <h3 className="font-medium text-lg">{course.title}</h3>
+                    <div key={course.id} className="p-6 border rounded-lg hover:border-blue-500 transition-all duration-200 bg-white">
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex-1">
+                          <h3 className="font-medium text-lg text-gray-900">{course.title}</h3>
+                          <p className="text-sm text-gray-600 mt-1">Преподаватель: {course.teacher}</p>
                         </div>
                         <Badge variant="secondary">Записан</Badge>
                       </div>
-                      <div className="mt-3 flex space-x-2">
-                        <Button size="sm">Продолжить</Button>
-                        <Button size="sm" variant="outline">Подробнее</Button>
+                      
+                      <div className="mb-4">
+                        <div className="flex justify-between text-sm mb-2">
+                          <span className="text-gray-600">Прогресс: {course.progress}%</span>
+                          <span className="text-gray-600">{course.lessons} уроков</span>
+                        </div>
+                        <Progress value={course.progress} className="h-2" />
+                      </div>
+                      
+                      <div className="flex space-x-3">
+                        <Button size="sm" className="flex-1">
+                          <Play className="w-4 h-4 mr-2" />
+                          Продолжить
+                        </Button>
+                        <Button size="sm" variant="outline" className="flex-1">
+                          <BookOpen className="w-4 h-4 mr-2" />
+                          Подробнее
+                        </Button>
                       </div>
                     </div>
                   ))}
                 </div>
-                <div className="mt-4 text-center">
+                <div className="mt-6 text-center">
                   <Button variant="ghost">Найти больше курсов</Button>
                 </div>
               </CardContent>
@@ -182,7 +195,7 @@ const UserDashboard = () => {
                           <p className="text-sm text-gray-600">Курс: {assignment.course}</p>
                           <p className="text-xs text-gray-500 mt-1">Срок сдачи: {assignment.dueDate}</p>
                         </div>
-                        <Badge variant={assignment.status === 'completed' ? 'success' : 'secondary'}>
+                        <Badge variant={assignment.status === 'completed' ? 'default' : 'secondary'}>
                           {assignment.status === 'completed' ? 'Выполнено' : 'Ожидает'}
                         </Badge>
                       </div>

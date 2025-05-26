@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -7,7 +8,6 @@ import Navbar from '@/components/Navbar';
 import { useAuth } from '@/context/AuthContext';
 
 import { courses } from '@/data/courses';
-
 
 const Courses = () => {
   const { user } = useAuth();
@@ -23,14 +23,14 @@ const Courses = () => {
             <h1 className="text-3xl font-bold text-gray-900">Курсы</h1>
             <p className="mt-2 text-gray-600">Выберите курс для начала обучения</p>
           </div>
-          {user && (user.role === 'teacher' || user.role === 'admin') ? (
+          {user && (user.role === 'teacher' || user.role === 'admin') && (
             <Link to="/create-course">
               <Button>
                 <Briefcase className="mr-2 h-4 w-4" />
                 Создать курс
               </Button>
             </Link>
-          ) : null}
+          )}
         </div>
 
         <div className="mt-8 grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">

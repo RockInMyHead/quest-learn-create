@@ -6,11 +6,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { BookOpen, User, Settings, FileText, BarChart3, Play } from 'lucide-react';
+import { BookOpen, User, FileText, Play, Plus } from 'lucide-react';
 import Navbar from '@/components/Navbar';
+import ProfileSettingsModal from '@/components/ProfileSettingsModal';
+import StatsModal from '@/components/StatsModal';
 import { useAuth } from '@/context/AuthContext';
 import { calculateCourseProgress } from '@/utils/courseProgress';
-
 import { courses } from '@/data/courses';
 
 const UserDashboard = () => {
@@ -33,6 +34,13 @@ const UserDashboard = () => {
     );
   }
 
+  // Вычисляем общую статистику
+  const totalLessons = userCourses.reduce((acc, course) => acc + course.lessons, 0);
+  const completedLessons = Object.values(currentUser.completedLessons).flat().length;
+  const overallProgress = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
+  const completedAssignments = userAssignments.filter(a => a.status === 'completed').length;
+  const assignmentProgress = userAssignments.length > 0 ? Math.round((completedAssignments / userAssignments.length) * 100) : 0;
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
@@ -43,13 +51,18 @@ const UserDashboard = () => {
             <h1 className="text-3xl font-bold text-gray-900">Личный кабинет</h1>
             <p className="text-gray-600 mt-1">Добро пожаловать, {currentUser.name}</p>
           </div>
-          <div className="mt-4 md:mt-0">
+          <div className="mt-4 md:mt-0 flex items-center space-x-2">
             <Badge className="mr-2">{currentUser.role === 'student' ? 'Студент' : 
               currentUser.role === 'teacher' ? 'Преподаватель' : 'Администратор'}</Badge>
-            <Button variant="outline" size="sm">
-              <Settings className="w-4 h-4 mr-2" />
-              Настройки
-            </Button>
+            <ProfileSettingsModal />
+            {currentUser.role === 'teacher' && (
+              <Button size="sm" asChild>
+                <Link to="/create-course">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Создать курс
+                </Link>
+              </Button>
+            )}
           </div>
         </div>
 
@@ -67,7 +80,7 @@ const UserDashboard = () => {
                 <h3 className="text-lg font-medium">{currentUser.name}</h3>
                 <p className="text-sm text-gray-600">{currentUser.email}</p>
                 <p className="text-xs text-gray-500">На платформе с {currentUser.joinDate}</p>
-                <Button className="w-full" variant="outline">Редактировать профиль</Button>
+                <ProfileSettingsModal />
               </div>
             </CardContent>
           </Card>
@@ -81,27 +94,22 @@ const UserDashboard = () => {
               <div className="space-y-4">
                 <div>
                   <div className="flex justify-between text-sm mb-1">
-                    <span>Курсы</span>
-                    <span>{userCourses.length}</span>
+                    <span>Общий прогресс</span>
+                    <span>{overallProgress}%</span>
                   </div>
-                  <div className="w-full bg-gray-200 h-2 rounded-full">
-                    <div className="bg-blue-600 h-2 rounded-full" style={{ width: '50%' }}></div>
-                  </div>
+                  <Progress value={overallProgress} className="h-2" />
+                  <p className="text-xs text-gray-500 mt-1">{completedLessons} из {totalLessons} уроков</p>
                 </div>
                 <div>
                   <div className="flex justify-between text-sm mb-1">
                     <span>Задания</span>
-                    <span>{userAssignments.filter(a => a.status === 'completed').length}/{userAssignments.length}</span>
+                    <span>{assignmentProgress}%</span>
                   </div>
-                  <div className="w-full bg-gray-200 h-2 rounded-full">
-                    <div className="bg-green-600 h-2 rounded-full" style={{ width: '30%' }}></div>
-                  </div>
+                  <Progress value={assignmentProgress} className="h-2" />
+                  <p className="text-xs text-gray-500 mt-1">{completedAssignments} из {userAssignments.length} заданий</p>
                 </div>
                 <div className="pt-2">
-                  <Button variant="ghost" size="sm" className="w-full">
-                    <BarChart3 className="w-4 h-4 mr-2" />
-                    Подробная статистика
-                  </Button>
+                  <StatsModal />
                 </div>
               </div>
             </CardContent>

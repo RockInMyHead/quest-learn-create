@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,6 +6,7 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import Navbar from '@/components/Navbar';
 import Quiz from '@/components/Quiz';
+import FormattedContent from '@/components/FormattedContent';
 import { courses } from '@/data/courses';
 import { useAuth } from '@/context/AuthContext';
 import { calculateCourseProgress, isLessonCompleted } from '@/utils/courseProgress';
@@ -35,7 +35,6 @@ const CoursePlayer = () => {
 
   const course = courses.find((c) => c.id === Number(id));
   
-  // Расширенные мок-данные уроков с реальным контентом
   const [lessons] = useState<Lesson[]>([
     {
       id: 1,
@@ -136,7 +135,7 @@ const CoursePlayer = () => {
             'element.onClick = function() {};',
             'element.addEventListener("click", function() {});',
             'element.addEvent("click", function() {});',
-            'element.on("click", function() {});'
+            'element.on("click", function() {};'
           ],
           correctAnswer: 1,
           explanation: 'Метод addEventListener() — это стандартный способ добавления обработчиков событий в современном JavaScript.'
@@ -252,7 +251,6 @@ const CoursePlayer = () => {
       <Navbar />
       
       <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-        {/* Header */}
         <div className="mb-6">
           <Button 
             variant="ghost" 
@@ -276,7 +274,6 @@ const CoursePlayer = () => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Sidebar with lessons */}
           <div className="lg:col-span-1">
             <Card>
               <CardHeader>
@@ -314,7 +311,6 @@ const CoursePlayer = () => {
             </Card>
           </div>
 
-          {/* Main content */}
           <div className="lg:col-span-3">
             <Card>
               <CardHeader>
@@ -336,7 +332,6 @@ const CoursePlayer = () => {
                 </div>
               </CardHeader>
               <CardContent>
-                {/* Lesson content */}
                 <div className="mb-8">
                   {currentLesson.type === 'video' && (
                     <>
@@ -387,15 +382,10 @@ const CoursePlayer = () => {
                       )}
                     </div>
                   ) : (
-                    <div className="prose max-w-none">
-                      <div className="text-gray-700 leading-relaxed whitespace-pre-line">
-                        {currentLesson.content}
-                      </div>
-                    </div>
+                    <FormattedContent content={currentLesson.content} />
                   )}
                 </div>
 
-                {/* Mark as completed button */}
                 {currentLesson.type !== 'quiz' && !isLessonCompleted(user, course.id, currentLesson.id) && (
                   <div className="mb-6">
                     <Button onClick={handleMarkCompleted} className="w-full">
@@ -405,7 +395,6 @@ const CoursePlayer = () => {
                   </div>
                 )}
 
-                {/* Navigation */}
                 <div className="flex justify-between items-center pt-6 border-t border-gray-200">
                   <Button
                     variant="outline"

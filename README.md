@@ -59,6 +59,7 @@ This project is built with:
 - React
 - shadcn-ui
 - Tailwind CSS
+- SQLite (via sql.js)
 
 ## How can I deploy this project?
 

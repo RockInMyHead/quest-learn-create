@@ -11,6 +11,7 @@ import Register from "./pages/Register";
 import ForgotPassword from "./pages/ForgotPassword";
 import Courses from "./pages/Courses";
 import CourseDetails from "./pages/CourseDetails";
+import CoursePlayer from "./pages/CoursePlayer";
 import CreateCourse from "./pages/CreateCourse";
 import AdminPanel from "./pages/AdminPanel";
 import UserDashboard from "./pages/UserDashboard";
@@ -32,6 +33,7 @@ const App = () => (
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/courses" element={<Courses />} />
           <Route path="/courses/:id" element={<CourseDetails />} />
+          <Route path="/courses/:id/learn" element={<CoursePlayer />} />
           <Route path="/create-course" element={<CreateCourse />} />
           <Route path="/admin" element={<AdminPanel />} />
           <Route path="/dashboard" element={<UserDashboard />} />

@@ -1,5 +1,5 @@
-
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -161,20 +161,26 @@ const UserDashboard = () => {
                       </div>
                       
                       <div className="flex space-x-3">
-                        <Button size="sm" className="flex-1">
-                          <Play className="w-4 h-4 mr-2" />
-                          Продолжить
+                        <Button size="sm" className="flex-1" asChild>
+                          <Link to={`/courses/${course.id}/learn`}>
+                            <Play className="w-4 h-4 mr-2" />
+                            Продолжить
+                          </Link>
                         </Button>
-                        <Button size="sm" variant="outline" className="flex-1">
-                          <BookOpen className="w-4 h-4 mr-2" />
-                          Подробнее
+                        <Button size="sm" variant="outline" className="flex-1" asChild>
+                          <Link to={`/courses/${course.id}`}>
+                            <BookOpen className="w-4 h-4 mr-2" />
+                            Подробнее
+                          </Link>
                         </Button>
                       </div>
                     </div>
                   ))}
                 </div>
                 <div className="mt-6 text-center">
-                  <Button variant="ghost">Найти больше курсов</Button>
+                  <Button variant="ghost" asChild>
+                    <Link to="/courses">Найти больше курсов</Link>
+                  </Button>
                 </div>
               </CardContent>
             </Card>

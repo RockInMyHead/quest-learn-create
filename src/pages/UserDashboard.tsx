@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,6 +9,8 @@ import { BookOpen, User, FileText, Play, Plus } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import ProfileSettingsModal from '@/components/ProfileSettingsModal';
 import StatsModal from '@/components/StatsModal';
+import AssignmentCodeInput from '@/components/AssignmentCodeInput';
+import TeacherAssignmentView from '@/components/TeacherAssignmentView';
 import { useAuth } from '@/context/AuthContext';
 import { calculateCourseProgress } from '@/utils/courseProgress';
 import { courses } from '@/data/courses';
@@ -17,6 +18,7 @@ import { courses } from '@/data/courses';
 const UserDashboard = () => {
   const { user: currentUser } = useAuth();
   const userCourses = courses.filter(c => currentUser?.courses.includes(c.id));
+  const [selectedTeacherAssignment, setSelectedTeacherAssignment] = useState(null);
 
   const [userAssignments] = useState([
     { id: 1, title: 'Домашнее задание 1', course: 'JavaScript для начинающих', dueDate: '2025-06-01', status: 'pending' },
@@ -40,6 +42,14 @@ const UserDashboard = () => {
   const overallProgress = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
   const completedAssignments = userAssignments.filter(a => a.status === 'completed').length;
   const assignmentProgress = userAssignments.length > 0 ? Math.round((completedAssignments / userAssignments.length) * 100) : 0;
+
+  const handleAssignmentFound = (assignment) => {
+    setSelectedTeacherAssignment(assignment);
+  };
+
+  const handleBackToSearch = () => {
+    setSelectedTeacherAssignment(null);
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -199,36 +209,47 @@ const UserDashboard = () => {
             </Card>
           </TabsContent>
           <TabsContent value="assignments">
-            <Card>
-              <CardHeader>
-                <CardTitle>Мои задания</CardTitle>
-                <CardDescription>Текущие и предстоящие задания</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {userAssignments.map(assignment => (
-                    <div key={assignment.id} className="p-4 border rounded-lg">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <h3 className="font-medium">{assignment.title}</h3>
-                          <p className="text-sm text-gray-600">Курс: {assignment.course}</p>
-                          <p className="text-xs text-gray-500 mt-1">Срок сдачи: {assignment.dueDate}</p>
+            <div className="space-y-6">
+              {selectedTeacherAssignment ? (
+                <TeacherAssignmentView 
+                  assignment={selectedTeacherAssignment}
+                  onBack={handleBackToSearch}
+                />
+              ) : (
+                <AssignmentCodeInput onAssignmentFound={handleAssignmentFound} />
+              )}
+              
+              <Card>
+                <CardHeader>
+                  <CardTitle>Мои задания</CardTitle>
+                  <CardDescription>Текущие и предстоящие задания</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {userAssignments.map(assignment => (
+                      <div key={assignment.id} className="p-4 border rounded-lg">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <h3 className="font-medium">{assignment.title}</h3>
+                            <p className="text-sm text-gray-600">Курс: {assignment.course}</p>
+                            <p className="text-xs text-gray-500 mt-1">Срок сдачи: {assignment.dueDate}</p>
+                          </div>
+                          <Badge variant={assignment.status === 'completed' ? 'default' : 'secondary'}>
+                            {assignment.status === 'completed' ? 'Выполнено' : 'Ожидает'}
+                          </Badge>
                         </div>
-                        <Badge variant={assignment.status === 'completed' ? 'default' : 'secondary'}>
-                          {assignment.status === 'completed' ? 'Выполнено' : 'Ожидает'}
-                        </Badge>
+                        <div className="mt-3 flex space-x-2">
+                          <Button size="sm" disabled={assignment.status === 'completed'}>
+                            {assignment.status === 'completed' ? 'Проверено' : 'Выполнить'}
+                          </Button>
+                          <Button size="sm" variant="outline">Подробнее</Button>
+                        </div>
                       </div>
-                      <div className="mt-3 flex space-x-2">
-                        <Button size="sm" disabled={assignment.status === 'completed'}>
-                          {assignment.status === 'completed' ? 'Проверено' : 'Выполнить'}
-                        </Button>
-                        <Button size="sm" variant="outline">Подробнее</Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
         </Tabs>
       </div>

@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,6 +12,7 @@ import ProfileSettingsModal from '@/components/ProfileSettingsModal';
 import StatsModal from '@/components/StatsModal';
 import AssignmentCodeInput from '@/components/AssignmentCodeInput';
 import TeacherAssignmentView from '@/components/TeacherAssignmentView';
+import CreateAssignmentModal from '@/components/CreateAssignmentModal';
 import { useAuth } from '@/context/AuthContext';
 import { calculateCourseProgress } from '@/utils/courseProgress';
 import { courses } from '@/data/courses';
@@ -66,12 +68,15 @@ const UserDashboard = () => {
               currentUser.role === 'teacher' ? 'Преподаватель' : 'Администратор'}</Badge>
             <ProfileSettingsModal />
             {currentUser.role === 'teacher' && (
-              <Button size="sm" asChild>
-                <Link to="/create-course">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Создать курс
-                </Link>
-              </Button>
+              <>
+                <CreateAssignmentModal />
+                <Button size="sm" asChild>
+                  <Link to="/create-course">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Создать курс
+                  </Link>
+                </Button>
+              </>
             )}
           </div>
         </div>
@@ -210,6 +215,26 @@ const UserDashboard = () => {
           </TabsContent>
           <TabsContent value="assignments">
             <div className="space-y-6">
+              {currentUser.role === 'teacher' && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Управление заданиями</CardTitle>
+                    <CardDescription>Создавайте задания для студентов</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex flex-col sm:flex-row gap-4">
+                      <CreateAssignmentModal />
+                      <Button variant="outline" asChild>
+                        <Link to="/teacher/assignments">
+                          <FileText className="w-4 h-4 mr-2" />
+                          Мои задания
+                        </Link>
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+              
               {selectedTeacherAssignment ? (
                 <TeacherAssignmentView 
                   assignment={selectedTeacherAssignment}

@@ -211,7 +211,7 @@ const CreateAssignmentModal = () => {
                 onValueChange={(value) => handleInputChange('course', value)}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Выберите курс" />
+                  <SelectValue placeholder="" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="JavaScript для начинающих">JavaScript для начинающих</SelectItem>

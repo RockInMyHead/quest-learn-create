@@ -169,8 +169,14 @@ const CoursePlayer = () => {
   ]);
 
   const [currentLessonIndex, setCurrentLessonIndex] = useState(0);
+  const [lessonStartTime, setLessonStartTime] = useState<Date | null>(null);
   const currentLesson = lessons[currentLessonIndex];
   const progressPercentage = calculateCourseProgress(user, Number(id), lessons.length);
+
+  // Отслеживание времени начала урока
+  React.useEffect(() => {
+    setLessonStartTime(new Date());
+  }, [currentLessonIndex]);
 
   if (!course) {
     return (
@@ -196,6 +202,13 @@ const CoursePlayer = () => {
   }
 
   const handleNextLesson = () => {
+    // Записываем время завершения урока
+    if (lessonStartTime && user) {
+      const timeSpent = Math.round((new Date().getTime() - lessonStartTime.getTime()) / (1000 * 60));
+      console.log(`Lesson ${currentLesson.id} completed in ${timeSpent} minutes`);
+      // Здесь можно сохранить данные о времени изучения урока
+    }
+    
     if (currentLessonIndex < lessons.length - 1) {
       setCurrentLessonIndex(currentLessonIndex + 1);
     }
@@ -208,11 +221,37 @@ const CoursePlayer = () => {
   };
 
   const handleMarkCompleted = () => {
+    // Записываем время завершения урока
+    if (lessonStartTime && user) {
+      const timeSpent = Math.round((new Date().getTime() - lessonStartTime.getTime()) / (1000 * 60));
+      console.log(`Lesson ${currentLesson.id} marked as completed after ${timeSpent} minutes`);
+      // Здесь можно сохранить данные о времени изучения урока
+    }
+    
     markLessonCompleted(course.id, currentLesson.id);
   };
 
   const handleQuizComplete = (score: number) => {
-    console.log(`Quiz completed with score: ${score}%`);
+    const timeSpent = lessonStartTime 
+      ? Math.round((new Date().getTime() - lessonStartTime.getTime()) / (1000 * 60))
+      : 0;
+    
+    console.log(`Quiz completed with score: ${score}%, time spent: ${timeSpent} minutes`);
+    
+    // Здесь можно сохранить данные о результатах теста
+    // Пример структуры данных для отправки в ML систему:
+    const quizData = {
+      lessonId: currentLesson.id,
+      courseId: course.id,
+      score,
+      timeSpent,
+      completedAt: new Date(),
+      correctAnswers: Math.round((score / 100) * (currentLesson.quiz?.length || 0)),
+      totalQuestions: currentLesson.quiz?.length || 0
+    };
+    
+    console.log('Quiz data for ML analysis:', quizData);
+    
     markLessonCompleted(course.id, currentLesson.id);
   };
 

@@ -19,12 +19,16 @@ const MLAnalytics = () => {
 
   // Загружаем реальные данные из базы Supabase
   useEffect(() => {
-    if (!user?.id) return;
+    if (!user?.id) {
+      console.log('Пользователь не авторизован или ID отсутствует');
+      return;
+    }
+    
     const fetchData = async () => {
       setIsLoading(true);
       setError(null);
       try {
-        console.log('Загружаем данные для пользователя:', user.id);
+        console.log('Загружаем данные для пользователя UUID:', user.id);
         
         // Получаем lesson_activities
         const { data: activities, error: actError } = await supabase
@@ -82,7 +86,7 @@ const MLAnalytics = () => {
       }
     };
     fetchData();
-  }, [user]);
+  }, [user?.id]);
 
   const runMLAnalysis = async () => {
     if (lessonActivities.length === 0 && quizResults.length === 0) {

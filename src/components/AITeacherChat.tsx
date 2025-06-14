@@ -11,7 +11,7 @@ interface Message {
   timestamp: Date;
 }
 
-const OPENAI_API_KEY = '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';
+const OPENAI_API_KEY = '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';
 
 const AITeacherChat = () => {
   const [messages, setMessages] = useState<Message[]>([

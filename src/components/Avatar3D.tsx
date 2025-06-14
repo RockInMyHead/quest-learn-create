@@ -1,4 +1,3 @@
-
 import React, { useRef } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
@@ -9,116 +8,96 @@ interface Avatar3DProps {
   isLoading: boolean;
 }
 
-// Компонент головы аватара
 function AvatarHead({ isSpeaking, isLoading }: { isSpeaking: boolean; isLoading: boolean }) {
-  const headRef = useRef<THREE.Mesh>(null);
-  const leftEyeRef = useRef<THREE.Mesh>(null);
-  const rightEyeRef = useRef<THREE.Mesh>(null);
-  const mouthRef = useRef<THREE.Mesh>(null);
-  const leftArmRef = useRef<THREE.Group>(null);
-  const rightArmRef = useRef<THREE.Group>(null);
+  const headRef = useRef<THREE.Mesh>(null!);
+  const leftEyeRef = useRef<THREE.Mesh>(null!);
+  const rightEyeRef = useRef<THREE.Mesh>(null!);
+  const mouthRef = useRef<THREE.Mesh>(null!);
+  const leftArmRef = useRef<THREE.Group>(null!);
+  const rightArmRef = useRef<THREE.Group>(null!);
 
   useFrame((state) => {
     const time = state.clock.getElapsedTime();
-    
-    // Анимация дыхания
     if (headRef.current) {
       headRef.current.scale.y = 1 + Math.sin(time * 2) * 0.02;
+      if (isLoading) {
+        headRef.current.rotation.z = Math.sin(time * 3) * 0.1;
+      } else {
+        headRef.current.rotation.z = 0;
+      }
     }
-
-    // Моргание
     if (leftEyeRef.current && rightEyeRef.current) {
       const blinkCycle = Math.sin(time * 0.5) > 0.95 ? 0.1 : 1;
       leftEyeRef.current.scale.y = blinkCycle;
       rightEyeRef.current.scale.y = blinkCycle;
     }
-
-    // Анимация разговора
     if (isSpeaking && mouthRef.current) {
       const speakCycle = Math.sin(time * 15) * 0.3 + 0.7;
       mouthRef.current.scale.y = speakCycle;
       mouthRef.current.scale.x = 1.2 - speakCycle * 0.2;
+    } else if (mouthRef.current) {
+      mouthRef.current.scale.y = 1;
+      mouthRef.current.scale.x = 1;
     }
-
-    // Движение рук при разговоре
     if (isSpeaking && leftArmRef.current && rightArmRef.current) {
       leftArmRef.current.rotation.z = Math.sin(time * 4) * 0.3;
       rightArmRef.current.rotation.z = -Math.sin(time * 4 + 1) * 0.3;
       leftArmRef.current.position.y = Math.sin(time * 6) * 0.1;
       rightArmRef.current.position.y = Math.sin(time * 6 + 0.5) * 0.1;
-    }
-
-    // Анимация загрузки - покачивание головой
-    if (isLoading && headRef.current) {
-      headRef.current.rotation.z = Math.sin(time * 3) * 0.1;
+    } else if (leftArmRef.current && rightArmRef.current) {
+      leftArmRef.current.rotation.z = 0;
+      rightArmRef.current.rotation.z = 0;
+      leftArmRef.current.position.y = 0;
+      rightArmRef.current.position.y = 0;
     }
   });
 
   return (
     <group>
-      {/* Голова */}
       <mesh ref={headRef} position={[0, 0, 0]}>
         <sphereGeometry args={[1, 32, 32]} />
         <meshStandardMaterial color="#ffdbac" />
       </mesh>
-
-      {/* Левый глаз */}
       <mesh ref={leftEyeRef} position={[-0.3, 0.2, 0.8]}>
         <sphereGeometry args={[0.15, 16, 16]} />
         <meshStandardMaterial color="#000" />
       </mesh>
-
-      {/* Правый глаз */}
       <mesh ref={rightEyeRef} position={[0.3, 0.2, 0.8]}>
         <sphereGeometry args={[0.15, 16, 16]} />
         <meshStandardMaterial color="#000" />
       </mesh>
-
-      {/* Рот */}
       <mesh ref={mouthRef} position={[0, -0.3, 0.8]}>
         <sphereGeometry args={[0.2, 16, 8]} />
         <meshStandardMaterial color="#ff6b6b" />
       </mesh>
-
-      {/* Нос */}
       <mesh position={[0, 0, 0.9]}>
         <coneGeometry args={[0.1, 0.3, 8]} />
         <meshStandardMaterial color="#ffdbac" />
       </mesh>
-
-      {/* Тело */}
       <mesh position={[0, -2, 0]}>
         <cylinderGeometry args={[0.8, 1, 2, 16]} />
         <meshStandardMaterial color="#4a90e2" />
       </mesh>
-
-      {/* Левая рука */}
       <group ref={leftArmRef} position={[-1.2, -1.5, 0]}>
         <mesh>
           <cylinderGeometry args={[0.2, 0.15, 1.5, 8]} />
           <meshStandardMaterial color="#ffdbac" />
         </mesh>
-        {/* Кисть */}
         <mesh position={[0, -0.9, 0]}>
           <sphereGeometry args={[0.25, 16, 16]} />
           <meshStandardMaterial color="#ffdbac" />
         </mesh>
       </group>
-
-      {/* Правая рука */}
       <group ref={rightArmRef} position={[1.2, -1.5, 0]}>
         <mesh>
           <cylinderGeometry args={[0.2, 0.15, 1.5, 8]} />
           <meshStandardMaterial color="#ffdbac" />
         </mesh>
-        {/* Кисть */}
         <mesh position={[0, -0.9, 0]}>
           <sphereGeometry args={[0.25, 16, 16]} />
           <meshStandardMaterial color="#ffdbac" />
         </mesh>
       </group>
-
-      {/* Волосы */}
       <mesh position={[0, 0.7, 0]}>
         <sphereGeometry args={[1.1, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2]} />
         <meshStandardMaterial color="#8B4513" />
@@ -131,21 +110,14 @@ const Avatar3D: React.FC<Avatar3DProps> = ({ isSpeaking, isLoading }) => {
   return (
     <div className="w-64 h-64 mx-auto rounded-lg overflow-hidden bg-gradient-to-b from-blue-100 to-blue-200">
       <Canvas camera={{ position: [0, 0, 6], fov: 50 }}>
-        {/* Освещение */}
         <ambientLight intensity={0.6} />
         <directionalLight position={[5, 5, 5]} intensity={0.8} />
         <pointLight position={[-5, -5, 5]} intensity={0.4} />
-
-        {/* Аватар */}
         <AvatarHead isSpeaking={isSpeaking} isLoading={isLoading} />
-
-        {/* Фон */}
         <mesh position={[0, 0, -5]}>
           <planeGeometry args={[20, 20]} />
           <meshStandardMaterial color="#e3f2fd" />
         </mesh>
-
-        {/* Контролы для вращения (опционально) */}
         <OrbitControls 
           enableZoom={false} 
           enablePan={false}
@@ -153,8 +125,6 @@ const Avatar3D: React.FC<Avatar3DProps> = ({ isSpeaking, isLoading }) => {
           minPolarAngle={Math.PI / 3}
         />
       </Canvas>
-
-      {/* Статус под аватаром */}
       <div className="text-center mt-2">
         <div className={`text-sm font-medium transition-colors duration-200 ${
           isSpeaking 
@@ -165,8 +135,6 @@ const Avatar3D: React.FC<Avatar3DProps> = ({ isSpeaking, isLoading }) => {
         }`}>
           {isSpeaking ? 'Говорит...' : isLoading ? 'Думает...' : 'AI Преподаватель'}
         </div>
-        
-        {/* Анимированные точки */}
         {(isSpeaking || isLoading) && (
           <div className="flex justify-center space-x-1 mt-1">
             <div className="w-1 h-1 bg-current rounded-full animate-bounce"></div>

@@ -38,6 +38,10 @@ const AITeacherChat = () => {
   const sendMessage = async () => {
     if (!inputMessage.trim() || isLoading) return;
 
+    console.log('=== STARTING API CALL ===');
+    console.log('Input message:', inputMessage);
+    console.log('API Key (first 10 chars):', API_KEY.substring(0, 10));
+
     const userMessage: Message = {
       id: Date.now().toString(),
       content: inputMessage,
@@ -51,46 +55,59 @@ const AITeacherChat = () => {
     setIsLoading(true);
 
     try {
-      console.log('Sending request to OpenAI API...');
+      const requestBody = {
+        model: 'gpt-3.5-turbo',
+        messages: [
+          {
+            role: 'system',
+            content: 'Ты опытный преподаватель, который помогает студентам изучать различные предметы. Отвечай на русском языке, будь дружелюбным и терпеливым. Объясняй сложные концепции простым языком и приводи примеры.'
+          },
+          {
+            role: 'user',
+            content: currentMessage
+          }
+        ],
+        temperature: 0.7,
+        max_tokens: 1000,
+      };
+
+      console.log('Request body:', JSON.stringify(requestBody, null, 2));
+
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${API_KEY}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          model: 'gpt-3.5-turbo',
-          messages: [
-            {
-              role: 'system',
-              content: 'Ты опытный преподаватель, который помогает студентам изучать различные предметы. Отвечай на русском языке, будь дружелюбным и терпеливым. Объясняй сложные концепции простым языком и приводи примеры.'
-            },
-            ...messages.map(msg => ({
-              role: msg.role,
-              content: msg.content
-            })),
-            {
-              role: 'user',
-              content: currentMessage
-            }
-          ],
-          temperature: 0.7,
-          max_tokens: 1000,
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       console.log('Response status:', response.status);
+      console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+      
+      const responseText = await response.text();
+      console.log('Raw response:', responseText);
       
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error('API Error:', response.status, errorText);
-        throw new Error(`API Error: ${response.status} - ${errorText}`);
+        console.error('API Error Details:', {
+          status: response.status,
+          statusText: response.statusText,
+          body: responseText
+        });
+        throw new Error(`API Error: ${response.status} - ${responseText}`);
       }
 
-      const data = await response.json();
-      console.log('API Response:', data);
+      let data;
+      try {
+        data = JSON.parse(responseText);
+        console.log('Parsed response:', data);
+      } catch (parseError) {
+        console.error('JSON Parse Error:', parseError);
+        throw new Error('Failed to parse API response');
+      }
       
       if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+        console.error('Invalid response structure:', data);
         throw new Error('Invalid response format from API');
       }
 
@@ -101,18 +118,24 @@ const AITeacherChat = () => {
         timestamp: new Date()
       };
 
+      console.log('Success! Assistant message:', assistantMessage.content);
       setMessages(prev => [...prev, assistantMessage]);
     } catch (error) {
-      console.error('Error calling OpenAI API:', error);
+      console.error('=== ERROR DETAILS ===');
+      console.error('Error type:', typeof error);
+      console.error('Error message:', error instanceof Error ? error.message : String(error));
+      console.error('Full error:', error);
+      
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
-        content: `Извините, произошла ошибка при обращении к AI: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}. Пожалуйста, попробуйте снова позже.`,
+        content: `Произошла ошибка: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}. Детали в консоли браузера.`,
         role: 'assistant',
         timestamp: new Date()
       };
       setMessages(prev => [...prev, errorMessage]);
     } finally {
       setIsLoading(false);
+      console.log('=== API CALL COMPLETED ===');
     }
   };
 

@@ -2,10 +2,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Bot, User, Send, Settings } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Bot, User, Send } from 'lucide-react';
 
 interface Message {
   id: string;
@@ -25,9 +23,9 @@ const AITeacherChat = () => {
   ]);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [apiKey, setApiKey] = useState(localStorage.getItem('openai_api_key') || '');
-  const [showSettings, setShowSettings] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const API_KEY = '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';
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -37,19 +35,8 @@ const AITeacherChat = () => {
     scrollToBottom();
   }, [messages]);
 
-  const saveApiKey = () => {
-    localStorage.setItem('openai_api_key', apiKey);
-    setShowSettings(false);
-  };
-
   const sendMessage = async () => {
     if (!inputMessage.trim() || isLoading) return;
-
-    if (!apiKey) {
-      alert('Пожалуйста, настройте API ключ OpenAI в настройках');
-      setShowSettings(true);
-      return;
-    }
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -66,7 +53,7 @@ const AITeacherChat = () => {
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${apiKey}`,
+          'Authorization': `Bearer ${API_KEY}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -107,7 +94,7 @@ const AITeacherChat = () => {
       console.error('Error calling OpenAI API:', error);
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
-        content: 'Извините, произошла ошибка при обращении к AI. Пожалуйста, проверьте ваш API ключ и попробуйте снова.',
+        content: 'Извините, произошла ошибка при обращении к AI. Пожалуйста, попробуйте снова позже.',
         role: 'assistant',
         timestamp: new Date()
       };
@@ -127,41 +114,11 @@ const AITeacherChat = () => {
   return (
     <div className="h-[600px] flex flex-col">
       <Card className="flex-1 flex flex-col">
-        <CardHeader className="flex-row items-center justify-between py-4">
+        <CardHeader className="py-4">
           <CardTitle className="flex items-center gap-2">
             <Bot className="w-5 h-5" />
             AI Преподаватель
           </CardTitle>
-          <Dialog open={showSettings} onOpenChange={setShowSettings}>
-            <DialogTrigger asChild>
-              <Button variant="outline" size="sm">
-                <Settings className="w-4 h-4" />
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Настройки OpenAI</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium">API Ключ OpenAI</label>
-                  <Input
-                    type="password"
-                    value={apiKey}
-                    onChange={(e) => setApiKey(e.target.value)}
-                    placeholder="sk-..."
-                    className="mt-1"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    Ваш API ключ будет сохранен локально в браузере
-                  </p>
-                </div>
-                <Button onClick={saveApiKey} className="w-full">
-                  Сохранить
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
         </CardHeader>
         
         <CardContent className="flex-1 flex flex-col p-0">

@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -12,7 +11,7 @@ interface Message {
   timestamp: Date;
 }
 
-const OPENAI_API_KEY = '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';
+const OPENAI_API_KEY = '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';
 
 const AITeacherChat = () => {
   const [messages, setMessages] = useState<Message[]>([
@@ -55,7 +54,7 @@ const AITeacherChat = () => {
 
     try {
       const requestBody = {
-        model: 'gpt-3.5-turbo',
+        model: 'gpt-4.1-2025-04-14',
         messages: [
           {
             role: 'system',

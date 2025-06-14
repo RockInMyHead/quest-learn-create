@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { MessageCircle, Send, Bot, User } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 interface Message {
   id: string;
@@ -16,10 +17,6 @@ const AITeacherChat = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  
-  // Фиксированные настройки API
-  const apiKey = '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';
-  const model = 'gpt-4o-mini';
 
   const sendMessage = async () => {
     if (!inputMessage.trim()) return;
@@ -36,19 +33,11 @@ const AITeacherChat = () => {
     setIsLoading(true);
 
     try {
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: model,
+      console.log('Sending message to AI chat function...');
+      
+      const { data, error } = await supabase.functions.invoke('ai-chat', {
+        body: {
           messages: [
-            {
-              role: 'system',
-              content: 'Вы AI преподаватель, который помогает студентам изучать различные предметы. Отвечайте на русском языке, будьте дружелюбны и старайтесь объяснять сложные темы простым языком.'
-            },
             ...messages.map(msg => ({
               role: msg.role,
               content: msg.content
@@ -57,22 +46,23 @@ const AITeacherChat = () => {
               role: 'user',
               content: inputMessage
             }
-          ],
-          max_tokens: 1000,
-          temperature: 0.7
-        }),
+          ]
+        }
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error?.message || 'Ошибка при обращении к API');
+      if (error) {
+        console.error('Supabase function error:', error);
+        throw new Error(error.message || 'Ошибка при вызове функции');
       }
 
-      const data = await response.json();
+      if (data?.error) {
+        throw new Error(data.error);
+      }
+
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: data.choices[0].message.content,
+        content: data.content,
         timestamp: new Date()
       };
 

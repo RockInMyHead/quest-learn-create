@@ -17,8 +17,9 @@ const AITeacherChat = () => {
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   
-  // Фиксированный API ключ
-  const apiKey = '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';
+  // Фиксированные настройки API
+  const apiKey = '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';
+  const model = 'gpt-4o-mini';
 
   const sendMessage = async () => {
     if (!inputMessage.trim()) return;
@@ -42,7 +43,7 @@ const AITeacherChat = () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'gpt-4o',
+          model: model,
           messages: [
             {
               role: 'system',

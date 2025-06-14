@@ -4,7 +4,10 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 export type UserRole = 'student' | 'teacher' | 'admin';
 
 export interface User {
+  id: string;
   name: string;
+  firstName: string;
+  lastName: string;
   email: string;
   role: UserRole;
   joinDate: string;
@@ -39,10 +42,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return false;
     }
     const joinDate = new Date().toLocaleDateString('ru-RU');
-    const storedUser = { ...data, joinDate, courses: [], completedLessons: {} };
+    const nameParts = data.name.split(' ');
+    const firstName = nameParts[0] || '';
+    const lastName = nameParts.slice(1).join(' ') || '';
+    const userId = Date.now().toString();
+    const storedUser = { 
+      ...data, 
+      id: userId,
+      firstName,
+      lastName,
+      joinDate, 
+      courses: [], 
+      completedLessons: {} 
+    };
     users.push(storedUser);
     localStorage.setItem('users', JSON.stringify(users));
-    const currentUser = { name: data.name, email: data.email, role: data.role, joinDate, courses: [], completedLessons: {} };
+    const currentUser = { 
+      id: userId,
+      name: data.name, 
+      firstName,
+      lastName,
+      email: data.email, 
+      role: data.role, 
+      joinDate, 
+      courses: [], 
+      completedLessons: {} 
+    };
     localStorage.setItem('currentUser', JSON.stringify(currentUser));
     setUser(currentUser);
     return true;
@@ -52,8 +77,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const users = JSON.parse(localStorage.getItem('users') || '[]');
     const found = users.find((u: any) => u.email === email && u.password === password);
     if (found) {
+      const nameParts = found.name.split(' ');
+      const firstName = nameParts[0] || '';
+      const lastName = nameParts.slice(1).join(' ') || '';
       const currentUser = {
+        id: found.id || Date.now().toString(),
         name: found.name,
+        firstName,
+        lastName,
         email: found.email,
         role: found.role,
         joinDate: found.joinDate,

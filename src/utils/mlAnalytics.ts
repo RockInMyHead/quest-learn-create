@@ -104,8 +104,8 @@ export const analyzeStudentPerformance = (
 
   return {
     overallGrade,
-    averageTimePerLesson,
-    averageQuizScore,
+    averageTimePerLesson: avgTimePerLesson,
+    averageQuizScore: avgQuizScore,
     learningEfficiency,
     strugglingAreas,
     recommendations,

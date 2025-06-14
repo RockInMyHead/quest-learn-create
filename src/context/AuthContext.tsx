@@ -26,6 +26,15 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
+// Функция для генерации UUID
+const generateUUID = () => {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0;
+    const v = c == 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+};
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
 
@@ -45,7 +54,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const nameParts = data.name.split(' ');
     const firstName = nameParts[0] || '';
     const lastName = nameParts.slice(1).join(' ') || '';
-    const userId = Date.now().toString();
+    const userId = generateUUID(); // Используем UUID вместо timestamp
     const storedUser = { 
       ...data, 
       id: userId,
@@ -80,8 +89,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const nameParts = found.name.split(' ');
       const firstName = nameParts[0] || '';
       const lastName = nameParts.slice(1).join(' ') || '';
+      // Если у пользователя старый ID (не UUID), генерируем новый
+      let userId = found.id;
+      if (!userId || !userId.includes('-')) {
+        userId = generateUUID();
+        // Обновляем ID в сохраненных данных
+        const userIndex = users.findIndex((u: any) => u.email === email);
+        if (userIndex !== -1) {
+          users[userIndex].id = userId;
+          localStorage.setItem('users', JSON.stringify(users));
+        }
+      }
       const currentUser = {
-        id: found.id || Date.now().toString(),
+        id: userId,
         name: found.name,
         firstName,
         lastName,

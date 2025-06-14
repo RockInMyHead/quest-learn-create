@@ -26,38 +26,42 @@ const MLAnalytics = () => {
       setIsLoading(true);
       setError(null);
       try {
-        console.log('Загружаем данные для пользователя UUID:', user.id);
-        
-        // Получаем lesson_activities
+        console.log('[Supabase] Инициализированный клиент?', typeof supabase);
+        if (!supabase) {
+          throw new Error('Supabase client не инициализирован');
+        }
+        console.log('[Supabase] Получаем lesson_activities для user_id:', user.id);
+
         const { data: activities, error: actError } = await supabase
           .from('lesson_activities')
           .select('*')
           .eq('user_id', user.id)
           .order('completed_at', { ascending: true });
-        
+
         if (actError) {
           console.error('Ошибка lesson_activities:', actError);
           throw new Error(`Ошибка lesson_activities: ${actError.message}`);
         }
-        
-        // Получаем quiz_results
+
+        if (!Array.isArray(activities)) {
+          throw new Error('Не удалось загрузить lesson_activities: ответ не массив (network/CORS error?)');
+        }
+
+        console.log('[Supabase] Получаем quiz_results для user_id:', user.id);
+
         const { data: quizzes, error: quizError } = await supabase
           .from('quiz_results')
           .select('*')
           .eq('user_id', user.id)
           .order('completed_at', { ascending: true });
-        
+
         if (quizError) {
           console.error('Ошибка quiz_results:', quizError);
           throw new Error(`Ошибка quiz_results: ${quizError.message}`);
         }
 
-        console.log('Загружено активностей:', activities?.length || 0);
-        console.log('Загружено результатов тестов:', quizzes?.length || 0);
-
-        // Обработка, если данные не массивы (например, если сеть недоступна)
-        if (!Array.isArray(activities) || !Array.isArray(quizzes)) {
-          throw new Error('Не удалось загрузить данные из базы Supabase, попробуйте позже');
+        if (!Array.isArray(quizzes)) {
+          throw new Error('Не удалось загрузить quiz_results: ответ не массив (network/CORS error?)');
         }
 
         const processedActivities = (activities ?? []).map((item: any) => ({
@@ -67,7 +71,7 @@ const MLAnalytics = () => {
           completedAt: item.completed_at,
           attempts: item.attempts,
         }));
-        
+
         const processedQuizzes = (quizzes ?? []).map((item: any) => ({
           lessonId: item.lesson_id,
           courseId: item.course_id,
@@ -81,8 +85,12 @@ const MLAnalytics = () => {
         setLessonActivities(processedActivities);
         setQuizResults(processedQuizzes);
       } catch (e: any) {
+        if (e.name === 'TypeError' || e?.message?.toLowerCase().includes('failed')) {
+          setError('Ошибка загрузки данных из Supabase: возможно, проблема с сетью или доступом к базе. Проверьте подключение к интернету и настройки Supabase.');
+        } else {
+          setError(e.message || 'Ошибка загрузки данных');
+        }
         console.error('Ошибка загрузки данных из Supabase:', e);
-        setError(e.message || 'Ошибка загрузки данных');
       } finally {
         setIsLoading(false);
       }

@@ -16,7 +16,7 @@ interface Message {
 const AITeacherChat = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputMessage, setInputMessage] = useState('');
-  const [apiKey, setApiKey] = useState('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');
+  const [apiKey, setApiKey] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   const sendMessage = async () => {
@@ -62,7 +62,8 @@ const AITeacherChat = () => {
       });
 
       if (!response.ok) {
-        throw new Error('Ошибка при обращении к API');
+        const errorData = await response.json();
+        throw new Error(errorData.error?.message || 'Ошибка при обращении к API');
       }
 
       const data = await response.json();
@@ -79,7 +80,7 @@ const AITeacherChat = () => {
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: 'Извините, произошла ошибка при обработке вашего запроса. Проверьте API ключ и попробуйте снова.',
+        content: `Извините, произошла ошибка: ${error.message}. Проверьте правильность API ключа и попробуйте снова.`,
         timestamp: new Date()
       };
       setMessages(prev => [...prev, errorMessage]);
@@ -111,16 +112,21 @@ const AITeacherChat = () => {
               type="password"
               value={apiKey}
               onChange={(e) => setApiKey(e.target.value)}
-              placeholder="Введите ваш OpenAI API ключ"
+              placeholder="Введите ваш OpenAI API ключ (обязательно)"
               className="w-full"
             />
+            {!apiKey.trim() && (
+              <p className="text-sm text-red-500 mt-1">
+                API ключ обязателен для работы чата
+              </p>
+            )}
           </div>
 
           <div className="h-96 border rounded-lg p-4 overflow-y-auto mb-4 bg-gray-50">
             {messages.length === 0 ? (
               <div className="text-center text-gray-500 mt-20">
                 <Bot className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-                <p>Привет! Я ваш AI преподаватель. Задайте мне любой вопрос!</p>
+                <p>Привет! Я ваш AI преподаватель. Введите API ключ и задайте мне любой вопрос!</p>
               </div>
             ) : (
               <div className="space-y-4">

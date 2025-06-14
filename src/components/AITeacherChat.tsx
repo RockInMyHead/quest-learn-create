@@ -1,11 +1,10 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { MessageCircle, Send, Bot, User, Volume2, VolumeX } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import AIAvatar from './AIAvatar';
+import Avatar3D from './Avatar3D';
 import { useSpeechSynthesis } from '@/hooks/useSpeechSynthesis';
 
 interface Message {
@@ -153,9 +152,9 @@ const AITeacherChat = () => {
         </CardHeader>
         
         <CardContent>
-          {/* AI Аватар */}
+          {/* 3D AI Аватар */}
           <div className="flex justify-center mb-6">
-            <AIAvatar isSpeaking={isSpeaking} isLoading={isLoading} />
+            <Avatar3D isSpeaking={isSpeaking} isLoading={isLoading} />
           </div>
 
           <div className="h-96 border rounded-lg p-4 overflow-y-auto mb-4 bg-gray-50">

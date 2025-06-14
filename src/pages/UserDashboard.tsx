@@ -5,13 +5,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Sparkles, GraduationCap, BarChart3 } from 'lucide-react';
+import { Sparkles, GraduationCap, BarChart3, MessageCircle } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import { useAuth } from '@/context/AuthContext';
 import { courses } from '@/data/courses';
 import { calculateCourseProgress } from '@/utils/courseProgress';
 import DetailedStats from '@/components/DetailedStats';
 import MLAnalytics from '@/components/MLAnalytics';
+import AITeacherChat from '@/components/AITeacherChat';
 
 const UserDashboard = () => {
   const navigate = useNavigate();
@@ -41,6 +42,7 @@ const UserDashboard = () => {
             <TabsTrigger value="courses" onClick={() => setActiveTab('courses')}>Курсы</TabsTrigger>
             <TabsTrigger value="stats" onClick={() => setActiveTab('stats')}>Статистика</TabsTrigger>
             <TabsTrigger value="analytics" onClick={() => setActiveTab('analytics')}>Аналитика</TabsTrigger>
+            <TabsTrigger value="ai-teacher" onClick={() => setActiveTab('ai-teacher')}>AI Преподаватель</TabsTrigger>
           </TabsList>
         </Tabs>
 
@@ -73,6 +75,8 @@ const UserDashboard = () => {
           {activeTab === 'stats' && <DetailedStats />}
           
           {activeTab === 'analytics' && <MLAnalytics />}
+          
+          {activeTab === 'ai-teacher' && <AITeacherChat />}
         </div>
       </div>
     </div>

@@ -1,11 +1,10 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { MessageCircle, Send, Bot, User, Volume2, VolumeX } from 'lucide-react';
+import { MessageCircle, Send, Bot, User } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import Avatar3D from './Avatar3D';
-import { useSpeechSynthesis } from '@/hooks/useSpeechSynthesis';
 
 interface Message {
   id: string;
@@ -18,9 +17,6 @@ const AITeacherChat = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [autoSpeak, setAutoSpeak] = useState(true);
-
-  const { speak, stop, isSpeaking, isSupported } = useSpeechSynthesis();
 
   const sendMessage = async () => {
     if (!inputMessage.trim()) return;
@@ -35,9 +31,6 @@ const AITeacherChat = () => {
     setMessages(prev => [...prev, userMessage]);
     setInputMessage('');
     setIsLoading(true);
-
-    // Останавливаем предыдущую речь
-    stop();
 
     try {
       console.log('Отправка сообщения в AI chat функцию...');
@@ -74,14 +67,6 @@ const AITeacherChat = () => {
       };
 
       setMessages(prev => [...prev, assistantMessage]);
-
-      // Автоматическая озвучка ответа AI
-      if (autoSpeak && isSupported && data.content) {
-        setTimeout(() => {
-          speak(data.content);
-        }, 500); // Небольшая задержка для лучшего UX
-      }
-
     } catch (error) {
       console.error('Ошибка:', error);
       const errorMessage: Message = {
@@ -103,14 +88,6 @@ const AITeacherChat = () => {
     }
   };
 
-  const handleSpeakMessage = (content: string) => {
-    if (isSpeaking) {
-      stop();
-    } else {
-      speak(content);
-    }
-  };
-
   return (
     <div className="max-w-4xl mx-auto space-y-4">
       <Card>
@@ -120,53 +97,17 @@ const AITeacherChat = () => {
               <MessageCircle className="w-5 h-5" />
               Чат с AI Преподавателем
             </div>
-            
-            {/* Управление озвучкой */}
-            {isSupported && (
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setAutoSpeak(!autoSpeak)}
-                  className={autoSpeak ? 'bg-blue-50 border-blue-200' : ''}
-                >
-                  {autoSpeak ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
-                  <span className="ml-1 text-xs">
-                    {autoSpeak ? 'Авто-озвучка' : 'Озвучка выкл.'}
-                  </span>
-                </Button>
-                
-                {isSpeaking && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={stop}
-                    className="text-red-600 hover:text-red-700"
-                  >
-                    Остановить
-                  </Button>
-                )}
-              </div>
-            )}
           </CardTitle>
         </CardHeader>
         
         <CardContent>
-          {/* 3D AI Аватар */}
-          <div className="flex justify-center mb-6">
-            <Avatar3D isSpeaking={isSpeaking} isLoading={isLoading} />
-          </div>
+          {/* РАНЕЕ ЗДЕСЬ БЫЛ 3D АВАТАР — УДАЛЕНО */}
 
           <div className="h-96 border rounded-lg p-4 overflow-y-auto mb-4 bg-gray-50">
             {messages.length === 0 ? (
               <div className="text-center text-gray-500 mt-20">
                 <div className="mb-4">
                   <p className="text-lg">Привет! Я ваш AI преподаватель. Задайте мне любой вопрос!</p>
-                  {isSupported && (
-                    <p className="text-sm text-blue-600 mt-2">
-                      🔊 Мои ответы будут озвучены на русском языке
-                    </p>
-                  )}
                 </div>
               </div>
             ) : (
@@ -197,18 +138,7 @@ const AITeacherChat = () => {
                         <p className="text-xs opacity-70">
                           {message.timestamp.toLocaleTimeString()}
                         </p>
-                        
-                        {/* Кнопка озвучки для сообщений AI */}
-                        {message.role === 'assistant' && isSupported && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleSpeakMessage(message.content)}
-                            className="p-1 h-6 w-6 ml-2"
-                          >
-                            <Volume2 className="w-3 h-3" />
-                          </Button>
-                        )}
+                        {/* КНОПКИ ОЗВУЧКИ УДАЛЕНЫ */}
                       </div>
                     </div>
                   </div>
@@ -243,12 +173,6 @@ const AITeacherChat = () => {
               <Send className="w-4 h-4" />
             </Button>
           </div>
-          
-          {!isSupported && (
-            <div className="mt-2 text-xs text-amber-600 bg-amber-50 p-2 rounded">
-              ⚠️ Ваш браузер не поддерживает озвучку текста
-            </div>
-          )}
         </CardContent>
       </Card>
     </div>

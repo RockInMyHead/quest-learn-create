@@ -46,10 +46,12 @@ const AITeacherChat = () => {
     };
 
     setMessages(prev => [...prev, userMessage]);
+    const currentMessage = inputMessage;
     setInputMessage('');
     setIsLoading(true);
 
     try {
+      console.log('Sending request to OpenAI API...');
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -57,7 +59,7 @@ const AITeacherChat = () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'gpt-4o',
+          model: 'gpt-3.5-turbo',
           messages: [
             {
               role: 'system',
@@ -69,7 +71,7 @@ const AITeacherChat = () => {
             })),
             {
               role: 'user',
-              content: inputMessage
+              content: currentMessage
             }
           ],
           temperature: 0.7,
@@ -77,11 +79,21 @@ const AITeacherChat = () => {
         }),
       });
 
+      console.log('Response status:', response.status);
+      
       if (!response.ok) {
-        throw new Error(`API Error: ${response.status}`);
+        const errorText = await response.text();
+        console.error('API Error:', response.status, errorText);
+        throw new Error(`API Error: ${response.status} - ${errorText}`);
       }
 
       const data = await response.json();
+      console.log('API Response:', data);
+      
+      if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+        throw new Error('Invalid response format from API');
+      }
+
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         content: data.choices[0].message.content,
@@ -94,7 +106,7 @@ const AITeacherChat = () => {
       console.error('Error calling OpenAI API:', error);
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
-        content: 'Извините, произошла ошибка при обращении к AI. Пожалуйста, попробуйте снова позже.',
+        content: `Извините, произошла ошибка при обращении к AI: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}. Пожалуйста, попробуйте снова позже.`,
         role: 'assistant',
         timestamp: new Date()
       };

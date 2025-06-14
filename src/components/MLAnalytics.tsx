@@ -8,15 +8,6 @@ import { Clock, Target, BarChart3, CheckCircle } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 
-// Для демо: тестовые данные (если таблиц нет)
-const MOCK_LESSON_ACTIVITIES = [
-  { lessonId: 1, courseId: 1, timeSpent: 28, completedAt: '2024-05-25', attempts: 1 },
-  { lessonId: 2, courseId: 1, timeSpent: 30, completedAt: '2024-05-27', attempts: 2 }
-];
-const MOCK_QUIZ_RESULTS = [
-  { lessonId: 1, courseId: 1, score: 73, correctAnswers: 11, totalQuestions: 15, timeSpent: 10, completedAt: '2024-05-28' }
-];
-
 const MLAnalytics = () => {
   const { user } = useAuth();
   const [lessonActivities, setLessonActivities] = useState<any[]>([]);
@@ -25,54 +16,54 @@ const MLAnalytics = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Грузим (или мокируем) данные
+  // Загружаем реальные данные из базы Supabase
   useEffect(() => {
-    if (!user) return;
-    // Попробуем запросить данные из Supabase — если не выйдет, подставим моки
+    if (!user?.id) return;
     const fetchData = async () => {
       setIsLoading(true);
+      setError(null);
       try {
-        let activitiesArr: any[] = [];
-        let quizzesArr: any[] = [];
+        // Получаем lesson_activities
+        const { data: activities, error: actError } = await supabase
+          .from('lesson_activities')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('completed_at', { ascending: true });
+        if (actError) throw new Error(`Ошибка lesson_activities: ${actError.message}`);
+        // Получаем quiz_results
+        const { data: quizzes, error: quizError } = await supabase
+          .from('quiz_results')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('completed_at', { ascending: true });
+        if (quizError) throw new Error(`Ошибка quiz_results: ${quizError.message}`);
 
-        // Попытка запроса, если нет таблиц — ловим ошибку, используем мок
-        try {
-          // @ts-expect-error Таблицы могут отсутствовать
-          const { data: act } = await supabase.from('lesson_activities').select('*').eq('user_id', user.id);
-          if (Array.isArray(act) && act.length > 0) {
-            activitiesArr = act.map((item: any) => ({
-              lessonId: item.lesson_id,
-              courseId: item.course_id,
-              timeSpent: item.time_spent,
-              completedAt: typeof item.completed_at === 'string' ? item.completed_at : String(item.completed_at),
-              attempts: item.attempts,
-            }));
-          }
-        } catch {
-          // Игнор, используем ниже mock...
-        }
+        // Приводим к нужному формату (строки дат и все поля как на стороне функц. анализа)
+        const processedActivities = (activities ?? []).map((item: any) => ({
+          lessonId: item.lesson_id,
+          courseId: item.course_id,
+          timeSpent: item.time_spent,
+          completedAt: typeof item.completed_at === 'string'
+            ? item.completed_at
+            : String(item.completed_at),
+          attempts: item.attempts,
+        }));
+        const processedQuizzes = (quizzes ?? []).map((item: any) => ({
+          lessonId: item.lesson_id,
+          courseId: item.course_id,
+          score: item.score,
+          correctAnswers: item.correct_answers,
+          totalQuestions: item.total_questions,
+          timeSpent: item.time_spent,
+          completedAt: typeof item.completed_at === 'string'
+            ? item.completed_at
+            : String(item.completed_at),
+        }));
 
-        try {
-          // @ts-expect-error Таблицы могут отсутствовать
-          const { data: quizzes } = await supabase.from('quiz_results').select('*').eq('user_id', user.id);
-          if (Array.isArray(quizzes) && quizzes.length > 0) {
-            quizzesArr = quizzes.map((item: any) => ({
-              lessonId: item.lesson_id,
-              courseId: item.course_id,
-              score: item.score,
-              correctAnswers: item.correct_answers,
-              totalQuestions: item.total_questions,
-              timeSpent: item.time_spent,
-              completedAt: typeof item.completed_at === 'string' ? item.completed_at : String(item.completed_at),
-            }));
-          }
-        } catch {
-          // Игнор, используем ниже mock...
-        }
-        if (activitiesArr.length === 0) activitiesArr = MOCK_LESSON_ACTIVITIES;
-        if (quizzesArr.length === 0) quizzesArr = MOCK_QUIZ_RESULTS;
-        setLessonActivities(activitiesArr);
-        setQuizResults(quizzesArr);
+        setLessonActivities(processedActivities);
+        setQuizResults(processedQuizzes);
+      } catch (e: any) {
+        setError(e.message || 'Ошибка загрузки данных');
       } finally {
         setIsLoading(false);
       }
@@ -86,15 +77,18 @@ const MLAnalytics = () => {
     setError(null);
     setMlAnalysis('');
     try {
-      // Приводим все значения к корректным строкам
       const payload = {
-        lessonActivities: lessonActivities.map((a) => ({
-          ...a, 
-          completedAt: typeof a.completedAt === 'string' ? a.completedAt : String(a.completedAt)
+        lessonActivities: lessonActivities.map(a => ({
+          ...a,
+          completedAt: typeof a.completedAt === 'string'
+            ? a.completedAt
+            : String(a.completedAt)
         })),
-        quizResults: quizResults.map((q) => ({
+        quizResults: quizResults.map(q => ({
           ...q,
-          completedAt: typeof q.completedAt === 'string' ? q.completedAt : String(q.completedAt)
+          completedAt: typeof q.completedAt === 'string'
+            ? q.completedAt
+            : String(q.completedAt)
         })),
       };
       const resp = await fetch('/functions/ml-analyze', {
@@ -112,7 +106,7 @@ const MLAnalytics = () => {
     setIsLoading(false);
   };
 
-  // Вычисляем метрики
+  // Метрики и рендер остаются прежними
   const avgTimePerLesson = lessonActivities.length ?
     Math.round(lessonActivities.reduce((sum, x) => sum + (Number(x.timeSpent) || 0), 0) / lessonActivities.length) : 0;
   const avgQuizScore = quizResults.length ?

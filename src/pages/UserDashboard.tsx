@@ -73,23 +73,6 @@ const UserDashboard = () => {
           {activeTab === 'stats' && <DetailedStats />}
           
           {activeTab === 'analytics' && <MLAnalytics />}
-
-          {activeTab === 'teacher' && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              <Card className="bg-white shadow-md hover:shadow-lg transition-shadow duration-300">
-                <CardHeader>
-                  <CardTitle className="text-lg font-semibold">Создать новый курс</CardTitle>
-                  <CardDescription>Начните делиться своими знаниями</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-gray-600 mb-4">Создайте уникальный курс и поделитесь им со студентами.</p>
-                  <Button onClick={() => navigate('/create-course')}>
-                    Создать курс
-                  </Button>
-                </CardContent>
-              </Card>
-            </div>
-          )}
         </div>
       </div>
     </div>

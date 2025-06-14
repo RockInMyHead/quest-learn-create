@@ -1,8 +1,7 @@
 
-import React, { useRef, useEffect, useState } from 'react';
-import { Canvas } from '@react-three/fiber';
-import { OrbitControls, Text, Sphere, Box } from '@react-three/drei';
-import { useFrame } from '@react-three/fiber';
+import React, { useRef } from 'react';
+import { Canvas, useFrame } from '@react-three/fiber';
+import { OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
 
 interface Avatar3DProps {
@@ -11,17 +10,13 @@ interface Avatar3DProps {
 }
 
 // Компонент головы аватара
-const AvatarHead = ({ isSpeaking, isLoading }: { isSpeaking: boolean; isLoading: boolean }) => {
+function AvatarHead({ isSpeaking, isLoading }: { isSpeaking: boolean; isLoading: boolean }) {
   const headRef = useRef<THREE.Mesh>(null);
   const leftEyeRef = useRef<THREE.Mesh>(null);
   const rightEyeRef = useRef<THREE.Mesh>(null);
   const mouthRef = useRef<THREE.Mesh>(null);
   const leftArmRef = useRef<THREE.Group>(null);
   const rightArmRef = useRef<THREE.Group>(null);
-  
-  const [blinkTime, setBlinkTime] = useState(0);
-  const [speakAnimation, setSpeakAnimation] = useState(0);
-  const [armAnimation, setArmAnimation] = useState(0);
 
   useFrame((state) => {
     const time = state.clock.getElapsedTime();
@@ -130,7 +125,7 @@ const AvatarHead = ({ isSpeaking, isLoading }: { isSpeaking: boolean; isLoading:
       </mesh>
     </group>
   );
-};
+}
 
 const Avatar3D: React.FC<Avatar3DProps> = ({ isSpeaking, isLoading }) => {
   return (

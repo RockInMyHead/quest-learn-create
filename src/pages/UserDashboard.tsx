@@ -5,14 +5,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Sparkles, GraduationCap, BarChart3, MessageCircle } from 'lucide-react';
+import { Sparkles, GraduationCap, BarChart3 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import { useAuth } from '@/context/AuthContext';
 import { courses } from '@/data/courses';
 import { calculateCourseProgress } from '@/utils/courseProgress';
 import DetailedStats from '@/components/DetailedStats';
 import MLAnalytics from '@/components/MLAnalytics';
-import AITeacherChat from '@/components/AITeacherChat';
 
 const UserDashboard = () => {
   const navigate = useNavigate();
@@ -42,10 +41,6 @@ const UserDashboard = () => {
             <TabsTrigger value="courses" onClick={() => setActiveTab('courses')}>Курсы</TabsTrigger>
             <TabsTrigger value="stats" onClick={() => setActiveTab('stats')}>Статистика</TabsTrigger>
             <TabsTrigger value="analytics" onClick={() => setActiveTab('analytics')}>Аналитика</TabsTrigger>
-            <TabsTrigger value="ai-chat" onClick={() => setActiveTab('ai-chat')}>
-              <MessageCircle className="w-4 h-4 mr-2" />
-              AI Преподаватель
-            </TabsTrigger>
           </TabsList>
         </Tabs>
 
@@ -78,8 +73,6 @@ const UserDashboard = () => {
           {activeTab === 'stats' && <DetailedStats />}
           
           {activeTab === 'analytics' && <MLAnalytics />}
-
-          {activeTab === 'ai-chat' && <AITeacherChat />}
 
           {activeTab === 'teacher' && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

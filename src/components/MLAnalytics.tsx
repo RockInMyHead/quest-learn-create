@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
-import { Clock, Target, BarChart3, CheckCircle, Plus } from 'lucide-react';
+import { Clock, Target, BarChart3, CheckCircle, BookOpen } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -84,59 +84,9 @@ const MLAnalytics = () => {
     fetchData();
   }, [user]);
 
-  // Функция для создания тестовых данных
-  const createSampleData = async () => {
-    if (!user?.id) return;
-    
-    setIsLoading(true);
-    try {
-      console.log('Создаем тестовые данные...');
-      
-      // Создаем тестовые активности
-      const sampleActivities = [
-        { user_id: user.id, lesson_id: 1, course_id: 1, time_spent: 25, attempts: 1 },
-        { user_id: user.id, lesson_id: 2, course_id: 1, time_spent: 30, attempts: 2 },
-        { user_id: user.id, lesson_id: 3, course_id: 1, time_spent: 20, attempts: 1 },
-        { user_id: user.id, lesson_id: 4, course_id: 1, time_spent: 35, attempts: 1 },
-        { user_id: user.id, lesson_id: 5, course_id: 1, time_spent: 28, attempts: 3 },
-      ];
-
-      const { error: activitiesError } = await supabase
-        .from('lesson_activities')
-        .insert(sampleActivities);
-
-      if (activitiesError) throw activitiesError;
-
-      // Создаем тестовые результаты тестов
-      const sampleQuizzes = [
-        { user_id: user.id, lesson_id: 1, course_id: 1, score: 85, correct_answers: 4, total_questions: 5, time_spent: 12 },
-        { user_id: user.id, lesson_id: 2, course_id: 1, score: 75, correct_answers: 3, total_questions: 4, time_spent: 8 },
-        { user_id: user.id, lesson_id: 3, course_id: 1, score: 90, correct_answers: 9, total_questions: 10, time_spent: 15 },
-        { user_id: user.id, lesson_id: 4, course_id: 1, score: 66, correct_answers: 2, total_questions: 3, time_spent: 8 },
-      ];
-
-      const { error: quizzesError } = await supabase
-        .from('quiz_results')
-        .insert(sampleQuizzes);
-
-      if (quizzesError) throw quizzesError;
-
-      toast.success('Тестовые данные созданы успешно!');
-      
-      // Перезагружаем данные
-      window.location.reload();
-    } catch (e: any) {
-      console.error('Ошибка создания тестовых данных:', e);
-      setError('Ошибка создания тестовых данных: ' + e.message);
-      toast.error('Не удалось создать тестовые данные');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const runMLAnalysis = async () => {
     if (lessonActivities.length === 0 && quizResults.length === 0) {
-      setError('Нет данных для анализа. Сначала добавьте тестовые данные.');
+      setError('Нет данных для анализа. Начните изучать курсы для получения аналитики.');
       return;
     }
 
@@ -221,59 +171,60 @@ const MLAnalytics = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {!hasData && (
-            <div className="text-center py-8 border rounded-lg bg-yellow-50 mb-6">
-              <p className="text-gray-600 mb-4">
-                У вас пока нет данных об активности для анализа
+          {!hasData && !isLoading && (
+            <div className="text-center py-12 border rounded-lg bg-gradient-to-br from-blue-50 to-indigo-50">
+              <BookOpen className="w-16 h-16 mx-auto mb-4 text-gray-400" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                Начните изучать курсы
+              </h3>
+              <p className="text-gray-600 mb-4 max-w-md mx-auto">
+                Для работы аналитики необходимо пройти хотя бы один урок или тест. 
+                Система будет отслеживать ваш прогресс и предоставлять персонализированные рекомендации.
               </p>
-              <Button onClick={createSampleData} disabled={isLoading} className="mb-2">
-                <Plus className="w-4 h-4 mr-2" />
-                Создать тестовые данные
-              </Button>
-              <p className="text-sm text-gray-500">
-                Это поможет продемонстрировать работу AI анализа
-              </p>
+              <div className="text-sm text-gray-500">
+                ML-анализ станет доступен после накопления данных об обучении
+              </div>
             </div>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-            <div className="text-center p-4 border rounded-lg">
-              <div className={`w-16 h-16 ${getGradeColor(overallGrade)} text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-2`}>
-                {overallGrade}
+          {(hasData || isLoading) && (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                <div className="text-center p-4 border rounded-lg">
+                  <div className={`w-16 h-16 ${getGradeColor(overallGrade)} text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-2`}>
+                    {overallGrade}
+                  </div>
+                  <p className="text-sm font-medium">Общая оценка</p>
+                </div>
+                <div className="text-center p-4 border rounded-lg">
+                  <Clock className="w-8 h-8 mx-auto mb-2 text-blue-500" />
+                  <p className="text-2xl font-bold">{avgTimePerLesson} мин</p>
+                  <p className="text-sm text-gray-600">Среднее время на урок</p>
+                </div>
+                <div className="text-center p-4 border rounded-lg">
+                  <Target className="w-8 h-8 mx-auto mb-2 text-green-500" />
+                  <p className="text-2xl font-bold">{avgQuizScore}%</p>
+                  <p className="text-sm text-gray-600">Средний балл тестов</p>
+                </div>
+                <div className="text-center p-4 border rounded-lg">
+                  <BarChart3 className="w-8 h-8 mx-auto mb-2 text-purple-500" />
+                  <p className="text-2xl font-bold">{efficiency}%</p>
+                  <p className="text-sm text-gray-600">Эффективность</p>
+                </div>
               </div>
-              <p className="text-sm font-medium">Общая оценка</p>
-            </div>
-            <div className="text-center p-4 border rounded-lg">
-              <Clock className="w-8 h-8 mx-auto mb-2 text-blue-500" />
-              <p className="text-2xl font-bold">{avgTimePerLesson} мин</p>
-              <p className="text-sm text-gray-600">Среднее время на урок</p>
-            </div>
-            <div className="text-center p-4 border rounded-lg">
-              <Target className="w-8 h-8 mx-auto mb-2 text-green-500" />
-              <p className="text-2xl font-bold">{avgQuizScore}%</p>
-              <p className="text-sm text-gray-600">Средний балл тестов</p>
-            </div>
-            <div className="text-center p-4 border rounded-lg">
-              <BarChart3 className="w-8 h-8 mx-auto mb-2 text-purple-500" />
-              <p className="text-2xl font-bold">{efficiency}%</p>
-              <p className="text-sm text-gray-600">Эффективность</p>
-            </div>
-          </div>
 
-          <div className="flex justify-between text-sm mb-2">
-            <span>Эффективность обучения</span>
-            <span>{efficiency}%</span>
-          </div>
-          <Progress value={efficiency} className="h-3" />
+              <div className="flex justify-between text-sm mb-2">
+                <span>Эффективность обучения</span>
+                <span>{efficiency}%</span>
+              </div>
+              <Progress value={efficiency} className="h-3" />
+            </>
+          )}
 
           {isLoading && (
             <div className="flex items-center justify-center py-8">
               <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mr-4"></div>
-              <span>
-                {lessonActivities.length === 0 && quizResults.length === 0 
-                  ? 'Создаем тестовые данные...' 
-                  : 'Анализируем ваши данные...'}
-              </span>
+              <span>Анализируем ваши данные...</span>
             </div>
           )}
 

@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -17,7 +16,6 @@ const MLAnalytics = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Загружаем реальные данные из базы Supabase
   useEffect(() => {
     if (!user?.id) {
       console.log('Пользователь не авторизован или ID отсутствует');
@@ -57,7 +55,11 @@ const MLAnalytics = () => {
         console.log('Загружено активностей:', activities?.length || 0);
         console.log('Загружено результатов тестов:', quizzes?.length || 0);
 
-        // Приводим к нужному формату
+        // Обработка, если данные не массивы (например, если сеть недоступна)
+        if (!Array.isArray(activities) || !Array.isArray(quizzes)) {
+          throw new Error('Не удалось загрузить данные из базы Supabase, попробуйте позже');
+        }
+
         const processedActivities = (activities ?? []).map((item: any) => ({
           lessonId: item.lesson_id,
           courseId: item.course_id,
@@ -79,13 +81,14 @@ const MLAnalytics = () => {
         setLessonActivities(processedActivities);
         setQuizResults(processedQuizzes);
       } catch (e: any) {
-        console.error('Ошибка загрузки данных:', e);
+        console.error('Ошибка загрузки данных из Supabase:', e);
         setError(e.message || 'Ошибка загрузки данных');
       } finally {
         setIsLoading(false);
       }
     };
     fetchData();
+    // eslint-disable-next-line
   }, [user?.id]);
 
   const runMLAnalysis = async () => {

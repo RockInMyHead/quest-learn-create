@@ -1,0 +1,65 @@
+
+/* Дополнительные анимации для AI аватара */
+@keyframes gentle-pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.8;
+  }
+}
+
+@keyframes wave-speech {
+  0%, 100% {
+    transform: scaleY(1);
+  }
+  25% {
+    transform: scaleY(1.2);
+  }
+  50% {
+    transform: scaleY(0.8);
+  }
+  75% {
+    transform: scaleY(1.1);
+  }
+}
+
+.ai-speaking {
+  animation: gentle-pulse 1.5s ease-in-out infinite;
+}
+
+.speech-wave {
+  animation: wave-speech 0.6s ease-in-out infinite;
+}
+
+.animation-delay-75 {
+  animation-delay: 75ms;
+}
+
+.animation-delay-100 {
+  animation-delay: 100ms;
+}
+
+.animation-delay-200 {
+  animation-delay: 200ms;
+}
+
+/* Плавные переходы для всех интерактивных элементов */
+.ai-avatar-container {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.ai-avatar-container:hover {
+  transform: translateY(-2px);
+}
+
+/* Градиентный фон для аватара */
+.ai-gradient {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.ai-gradient-active {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}

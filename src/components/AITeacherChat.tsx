@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -38,6 +39,8 @@ const AITeacherChat = () => {
     if (!inputMessage.trim() || isLoading) return;
 
     console.log('=== STARTING API CALL ===');
+    console.log('API Key length:', OPENAI_API_KEY.length);
+    console.log('API Key starts with:', OPENAI_API_KEY.substring(0, 20) + '...');
     console.log('Input message:', inputMessage);
 
     const userMessage: Message = {
@@ -54,7 +57,7 @@ const AITeacherChat = () => {
 
     try {
       const requestBody = {
-        model: 'gpt-4.1-2025-04-14',
+        model: 'gpt-4o-mini',
         messages: [
           {
             role: 'system',
@@ -70,6 +73,7 @@ const AITeacherChat = () => {
       };
 
       console.log('Request body:', JSON.stringify(requestBody, null, 2));
+      console.log('Authorization header will be:', `Bearer ${OPENAI_API_KEY.substring(0, 20)}...`);
 
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
@@ -81,6 +85,7 @@ const AITeacherChat = () => {
       });
 
       console.log('Response status:', response.status);
+      console.log('Response headers:', Object.fromEntries(response.headers.entries()));
       
       const responseText = await response.text();
       console.log('Raw response:', responseText);

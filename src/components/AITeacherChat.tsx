@@ -3,7 +3,9 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Bot, User, Send } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Bot, User, Send, Settings } from 'lucide-react';
 
 interface Message {
   id: string;
@@ -16,16 +18,24 @@ const AITeacherChat = () => {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
-      content: 'Привет! Я ваш AI преподаватель. Я могу помочь вам с изучением материала, ответить на вопросы и объяснить сложные темы. О чем хотите поговорить?',
+      content: 'Привет! Я ваш AI преподаватель. Сначала введите ваш OpenAI API ключ в настройках, затем я смогу помочь вам с изучением материала, ответить на вопросы и объяснить сложные темы.',
       role: 'assistant',
       timestamp: new Date()
     }
   ]);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [apiKey, setApiKey] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const API_KEY = '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';
+  useEffect(() => {
+    // Загружаем API ключ из localStorage при загрузке компонента
+    const savedApiKey = localStorage.getItem('openai_api_key');
+    if (savedApiKey) {
+      setApiKey(savedApiKey);
+    }
+  }, []);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -35,12 +45,31 @@ const AITeacherChat = () => {
     scrollToBottom();
   }, [messages]);
 
+  const saveApiKey = () => {
+    if (apiKey.trim()) {
+      localStorage.setItem('openai_api_key', apiKey.trim());
+      setShowSettings(false);
+      console.log('API ключ сохранен');
+    }
+  };
+
   const sendMessage = async () => {
     if (!inputMessage.trim() || isLoading) return;
+    
+    if (!apiKey.trim()) {
+      const errorMessage: Message = {
+        id: Date.now().toString(),
+        content: 'Пожалуйста, сначала введите ваш OpenAI API ключ в настройках.',
+        role: 'assistant',
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, errorMessage]);
+      return;
+    }
 
     console.log('=== STARTING API CALL ===');
     console.log('Input message:', inputMessage);
-    console.log('API Key (first 10 chars):', API_KEY.substring(0, 10));
+    console.log('API Key available:', !!apiKey);
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -76,14 +105,13 @@ const AITeacherChat = () => {
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${API_KEY}`,
+          'Authorization': `Bearer ${apiKey}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(requestBody),
       });
 
       console.log('Response status:', response.status);
-      console.log('Response headers:', Object.fromEntries(response.headers.entries()));
       
       const responseText = await response.text();
       console.log('Raw response:', responseText);
@@ -128,7 +156,7 @@ const AITeacherChat = () => {
       
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
-        content: `Произошла ошибка: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}. Детали в консоли браузера.`,
+        content: `Произошла ошибка: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}. Проверьте правильность API ключа.`,
         role: 'assistant',
         timestamp: new Date()
       };
@@ -150,13 +178,45 @@ const AITeacherChat = () => {
     <div className="h-[600px] flex flex-col">
       <Card className="flex-1 flex flex-col">
         <CardHeader className="py-4">
-          <CardTitle className="flex items-center gap-2">
-            <Bot className="w-5 h-5" />
-            AI Преподаватель
+          <CardTitle className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Bot className="w-5 h-5" />
+              AI Преподаватель
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowSettings(!showSettings)}
+            >
+              <Settings className="w-4 h-4" />
+            </Button>
           </CardTitle>
         </CardHeader>
         
         <CardContent className="flex-1 flex flex-col p-0">
+          {showSettings && (
+            <div className="p-4 border-b bg-gray-50">
+              <div className="space-y-2">
+                <Label htmlFor="api-key">OpenAI API Ключ</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="api-key"
+                    type="password"
+                    placeholder="sk-..."
+                    value={apiKey}
+                    onChange={(e) => setApiKey(e.target.value)}
+                  />
+                  <Button onClick={saveApiKey} size="sm">
+                    Сохранить
+                  </Button>
+                </div>
+                <p className="text-xs text-gray-600">
+                  Получите API ключ на <a href="https://platform.openai.com/account/api-keys" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">platform.openai.com</a>
+                </p>
+              </div>
+            </div>
+          )}
+          
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
             {messages.map((message) => (
               <div

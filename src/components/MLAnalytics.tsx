@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -16,9 +17,22 @@ const MLAnalytics = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Функция для проверки валидности UUID
+  const isValidUUID = (uuid: string) => {
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    return uuidRegex.test(uuid);
+  };
+
   useEffect(() => {
     if (!user?.id) {
       console.log('Пользователь не авторизован или ID отсутствует');
+      return;
+    }
+
+    // Проверяем валидность UUID пользователя
+    if (!isValidUUID(user.id)) {
+      setError('Ошибка: неверный формат ID пользователя. Пожалуйста, выйдите из системы и войдите заново.');
+      console.error('Невалидный UUID пользователя:', user.id);
       return;
     }
     
@@ -26,10 +40,6 @@ const MLAnalytics = () => {
       setIsLoading(true);
       setError(null);
       try {
-        console.log('[Supabase] Инициализированный клиент?', typeof supabase);
-        if (!supabase) {
-          throw new Error('Supabase client не инициализирован');
-        }
         console.log('[Supabase] Получаем lesson_activities для user_id:', user.id);
 
         const { data: activities, error: actError } = await supabase
@@ -43,10 +53,6 @@ const MLAnalytics = () => {
           throw new Error(`Ошибка lesson_activities: ${actError.message}`);
         }
 
-        if (!Array.isArray(activities)) {
-          throw new Error('Не удалось загрузить lesson_activities: ответ не массив (network/CORS error?)');
-        }
-
         console.log('[Supabase] Получаем quiz_results для user_id:', user.id);
 
         const { data: quizzes, error: quizError } = await supabase
@@ -58,10 +64,6 @@ const MLAnalytics = () => {
         if (quizError) {
           console.error('Ошибка quiz_results:', quizError);
           throw new Error(`Ошибка quiz_results: ${quizError.message}`);
-        }
-
-        if (!Array.isArray(quizzes)) {
-          throw new Error('Не удалось загрузить quiz_results: ответ не массив (network/CORS error?)');
         }
 
         const processedActivities = (activities ?? []).map((item: any) => ({
@@ -85,7 +87,9 @@ const MLAnalytics = () => {
         setLessonActivities(processedActivities);
         setQuizResults(processedQuizzes);
       } catch (e: any) {
-        if (e.name === 'TypeError' || e?.message?.toLowerCase().includes('failed')) {
+        if (e.message.includes('invalid input syntax for type uuid')) {
+          setError('Ошибка ID пользователя. Пожалуйста, очистите localStorage браузера, выйдите из системы и войдите заново.');
+        } else if (e.name === 'TypeError' || e?.message?.toLowerCase().includes('failed')) {
           setError('Ошибка загрузки данных из Supabase: возможно, проблема с сетью или доступом к базе. Проверьте подключение к интернету и настройки Supabase.');
         } else {
           setError(e.message || 'Ошибка загрузки данных');
@@ -96,7 +100,6 @@ const MLAnalytics = () => {
       }
     };
     fetchData();
-    // eslint-disable-next-line
   }, [user?.id]);
 
   const runMLAnalysis = async () => {
@@ -186,7 +189,7 @@ const MLAnalytics = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {!hasData && !isLoading && (
+          {!hasData && !isLoading && !error && (
             <div className="text-center py-12 border rounded-lg bg-gradient-to-br from-blue-50 to-indigo-50">
               <BookOpen className="w-16 h-16 mx-auto mb-4 text-gray-400" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">
@@ -202,7 +205,7 @@ const MLAnalytics = () => {
             </div>
           )}
 
-          {(hasData || isLoading) && (
+          {(hasData || isLoading) && !error && (
             <>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
                 <div className="text-center p-4 border rounded-lg">
@@ -245,7 +248,19 @@ const MLAnalytics = () => {
 
           {error && (
             <div className="mt-6 p-4 border rounded-lg bg-red-50 text-red-800">
-              {error}
+              <div className="font-medium mb-2">Ошибка:</div>
+              <div>{error}</div>
+              {error.includes('localStorage') && (
+                <div className="mt-3 text-sm">
+                  <p className="font-medium">Как исправить:</p>
+                  <ol className="list-decimal list-inside mt-1 space-y-1">
+                    <li>Откройте DevTools (F12)</li>
+                    <li>Перейдите в Application → Local Storage</li>
+                    <li>Удалите все данные или выполните localStorage.clear()</li>
+                    <li>Обновите страницу и войдите заново</li>
+                  </ol>
+                </div>
+              )}
             </div>
           )}
 
@@ -259,7 +274,7 @@ const MLAnalytics = () => {
             </div>
           )}
 
-          {hasData && !isLoading && (
+          {hasData && !isLoading && !error && (
             <Button onClick={runMLAnalysis} variant="outline" className="w-full mt-4">
               Запустить AI-анализ
             </Button>

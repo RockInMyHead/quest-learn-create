@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { BookOpen, BarChart3 } from 'lucide-react';
@@ -8,7 +9,7 @@ import AverageMetrics from './ml-analytics/AverageMetrics';
 import MLAnalysisSection from './ml-analytics/MLAnalysisSection';
 import MLErrorBlock from './ml-analytics/MLErrorBlock';
 import StrugglingTopicsGenerator from "./ml-analytics/StrugglingTopicsGenerator";
-import { useStrugglingTopics } from "@/hooks/useStrugglingTopics"; // новинка
+import { useStrugglingTopics } from "@/hooks/useStrugglingTopics";
 
 const MLAnalytics = () => {
   const { user } = useAuth();
@@ -119,6 +120,13 @@ const MLAnalytics = () => {
 
   // Новый способ определения сложных тем с пониженным порогом (score < 90)
   const strugglingTopics = useStrugglingTopics(quizResults, 90);
+
+  // Заглушка: функция для запуска AI-анализа
+  const runMLAnalysis = () => {
+    // Здесь может быть запрос к AI или Edge Function, для начала просто тестовая реализация
+    setMlAnalysis("AI-подсказка: анализ успешно выполнен. (Здесь будут персональные рекомендации)");
+    toast.success("Анализ данных запущен!");
+  };
 
   return (
     <div className="space-y-6">

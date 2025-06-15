@@ -122,7 +122,6 @@ const MLAnalytics = () => {
     
     try {
       console.log('Запускаем ML анализ...');
-      
       const payload = {
         lessonActivities: lessonActivities,
         quizResults: quizResults,
@@ -136,11 +135,23 @@ const MLAnalytics = () => {
         body: JSON.stringify(payload),
       });
 
-      if (!resp.ok) {
-        throw new Error(`HTTP ${resp.status}: ${resp.statusText}`);
+      const rawText = await resp.text();
+      console.log('Raw ML-анализ текст:', rawText);
+
+      let result;
+      try {
+        result = JSON.parse(rawText);
+      } catch (e) {
+        setError(
+          'Ошибка парсинга результата ML-функции: ' +
+            (e.message || e) +
+            '\nRaw ответ:\n' +
+            rawText
+        );
+        setIsLoading(false);
+        return;
       }
 
-      const result = await resp.json();
       console.log('Результат анализа:', result);
 
       if (result.analysis) {

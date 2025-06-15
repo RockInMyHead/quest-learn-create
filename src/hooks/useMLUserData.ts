@@ -28,13 +28,23 @@ export function useMLUserData(user: User | null) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!user?.id) return;
+    // Новый: очистка данных при отсутствии user?.id (при разлогинивании или смене пользователя)
+    if (!user?.id) {
+      setLessonActivities([]);
+      setQuizResults([]);
+      setLoading(false);
+      setError(null);
+      return;
+    }
 
     // Проверка UUID (можно убрать, если доверяем AuthContext)
     const isValidUUID = (uuid: string) => /^[0-9a-fA-F-]{36}$/.test(uuid);
 
     if (!isValidUUID(user.id)) {
       setError("Ошибка: неверный формат ID пользователя. Пожалуйста, выйдите из системы и войдите заново.");
+      setLessonActivities([]);
+      setQuizResults([]);
+      setLoading(false);
       return;
     }
 
@@ -82,6 +92,8 @@ export function useMLUserData(user: User | null) {
         }
       } catch (e: any) {
         setError(e.message || "Ошибка загрузки данных");
+        setLessonActivities([]);
+        setQuizResults([]);
       } finally {
         if (!ignore) setLoading(false);
       }
@@ -93,5 +105,9 @@ export function useMLUserData(user: User | null) {
     };
   }, [user?.id]);
 
+  // Для быстрой диагностики — выводим значения в консоль
+  console.log('[useMLUserData] lessonActivities:', lessonActivities, '| quizResults:', quizResults, '| user:', user?.id);
+
   return { lessonActivities, quizResults, loading, error };
 }
+

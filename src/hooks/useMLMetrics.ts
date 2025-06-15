@@ -3,12 +3,23 @@ import { useMemo } from "react";
 import type { LessonActivity, QuizResult } from "./useMLUserData";
 
 export function useMLMetrics(lessonActivities: LessonActivity[], quizResults: QuizResult[]) {
-  // Среднее время на урок
+  // Добавляем консоль для отладки
+  console.log("lessonActivities (raw):", lessonActivities);
+
+  // Оставляем только валидные значения
+  const validActivities = useMemo(() => lessonActivities.filter(
+    x => Number(x.timeSpent) > 0 && Number(x.timeSpent) < 180 // 3 часа макс
+  ), [lessonActivities]);
+
+  // Консоль для контроля
+  console.log("validActivities (timeSpent>0 & <180):", validActivities);
+
+  // Среднее время на урок (минуты, округлённое)
   const avgTimePerLesson = useMemo(() => {
-    if (!lessonActivities.length) return 0;
-    const times = lessonActivities.map(x => Number(x.timeSpent) || 0);
+    if (!validActivities.length) return 0;
+    const times = validActivities.map(x => Number(x.timeSpent) || 0);
     return times.length ? Math.round(times.reduce((sum, t) => sum + t, 0) / times.length) : 0;
-  }, [lessonActivities]);
+  }, [validActivities]);
 
   // Средний балл тестов
   const avgQuizScore = useMemo(() => {

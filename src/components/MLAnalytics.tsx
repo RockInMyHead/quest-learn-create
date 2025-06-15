@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { BookOpen, BarChart3 } from 'lucide-react';
@@ -8,13 +7,12 @@ import AverageMetrics from './ml-analytics/AverageMetrics';
 import MLAnalysisSection from './ml-analytics/MLAnalysisSection';
 import MLErrorBlock from './ml-analytics/MLErrorBlock';
 import StrugglingTopicsGenerator from "./ml-analytics/StrugglingTopicsGenerator";
-import { useStrugglingTopics } from "@/hooks/useStrugglingTopics";
 import { useMLUserData } from "@/hooks/useMLUserData";
 import { useMLMetrics } from "@/hooks/useMLMetrics";
 
 const MLAnalytics = () => {
   const { user } = useAuth();
-  const [mlAnalysis, setMlAnalysis] = useState<string>('');
+  const [mlAnalysis, setMlAnalysis] = useState<string>("");
 
   // Получение пользовательских активностей и квизов (супабейс)
   const { lessonActivities, quizResults, loading: isLoading, error } = useMLUserData(user);
@@ -24,9 +22,6 @@ const MLAnalytics = () => {
 
   // Есть ли какие-либо данные
   const hasData = lessonActivities.length > 0 || quizResults.length > 0;
-
-  // Темы с низкими результатами
-  const strugglingTopics = useStrugglingTopics(quizResults, 90);
 
   // Заглушка: функция для запуска AI-анализа
   const runMLAnalysis = () => {
@@ -69,7 +64,12 @@ const MLAnalytics = () => {
                 avgQuizScore={avgQuizScore}
                 efficiency={efficiency}
               />
-              <StrugglingTopicsGenerator strugglingTopics={strugglingTopics} baseCourseTitle="Ваш курс" />
+              {/* теперь передаем фактические активности и квизы */}
+              <StrugglingTopicsGenerator
+                baseCourseTitle="Ваш курс"
+                lessonActivities={lessonActivities}
+                quizResults={quizResults}
+              />
             </>
           )}
           {isLoading && (

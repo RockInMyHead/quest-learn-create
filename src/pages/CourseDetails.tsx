@@ -8,6 +8,8 @@ import { Progress } from '@/components/ui/progress';
 import { courses } from '@/data/courses';
 import { useAuth } from '@/context/AuthContext';
 import { User, BookOpen, Clock } from 'lucide-react';
+import { useGeneratedLessons } from '@/hooks/useGeneratedLessons';
+import GeneratedLessonsBlock from '@/components/GeneratedLessonsBlock';
 
 const CourseDetails = () => {
   const { id } = useParams<{ id: string }>();
@@ -15,6 +17,9 @@ const CourseDetails = () => {
   const { user, enroll } = useAuth();
 
   const course = courses.find((c) => c.id === Number(id));
+  const courseId = course?.id || 0;
+  const { aiLessons, loading, refetch } = useGeneratedLessons(courseId);
+
   if (!course) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -77,6 +82,9 @@ const CourseDetails = () => {
             <Button onClick={handleEnroll} disabled={isEnrolled} className="w-full md:w-auto">
               {isEnrolled ? 'Вы записаны' : 'Записаться на курс'}
             </Button>
+
+            {/* Новый блок автоматических AI-уроков */}
+            <GeneratedLessonsBlock aiLessons={aiLessons} loading={loading} onRefresh={refetch} />
           </CardContent>
         </Card>
       </div>

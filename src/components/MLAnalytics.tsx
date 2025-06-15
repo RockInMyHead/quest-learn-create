@@ -49,22 +49,36 @@ const MLAnalytics = () => {
           .eq('user_id', user.id)
           .order('completed_at', { ascending: true });
         if (quizError) throw new Error(`Ошибка quiz_results: ${quizError.message}`);
-        setLessonActivities((activities ?? []).map((item: any) => ({
-          lessonId: item.lesson_id,
-          courseId: item.course_id,
-          timeSpent: item.time_spent,
-          completedAt: item.completed_at,
-          attempts: item.attempts,
-        })));
-        setQuizResults((quizzes ?? []).map((item: any) => ({
-          lessonId: item.lesson_id,
-          courseId: item.course_id,
-          score: item.score,
-          correctAnswers: item.correct_answers,
-          totalQuestions: item.total_questions,
-          timeSpent: item.time_spent,
-          completedAt: item.completed_at,
-        })));
+
+        const cleanedActivities = (activities ?? [])
+          // Исключаем явно некорректные или тестовые данные
+          .filter((item: any) => !!item.lesson_id && !!item.user_id)
+          .map((item: any) => ({
+            lessonId: item.lesson_id,
+            courseId: item.course_id,
+            timeSpent: Number(item.time_spent),
+            completedAt: item.completed_at,
+            attempts: item.attempts,
+          }));
+
+        setLessonActivities(cleanedActivities);
+
+        const cleanedQuizzes = (quizzes ?? [])
+          .filter((item: any) => !!item.lesson_id && !!item.user_id)
+          .map((item: any) => ({
+            lessonId: item.lesson_id,
+            courseId: item.course_id,
+            score: Number(item.score),
+            correctAnswers: item.correct_answers,
+            totalQuestions: item.total_questions,
+            timeSpent: Number(item.time_spent),
+            completedAt: item.completed_at,
+          }));
+
+        setQuizResults(cleanedQuizzes);
+
+        console.log("DEBUG (MLAnalytics): cleaned lessonActivities = ", cleanedActivities);
+        console.log("DEBUG (MLAnalytics): cleaned quizResults = ", cleanedQuizzes);
       } catch (e: any) {
         if (e.message.includes('invalid input syntax for type uuid')) {
           setError('Ошибка ID пользователя. Пожалуйста, очистите localStorage браузера, выйдите из системы и войдите заново.');
@@ -80,61 +94,22 @@ const MLAnalytics = () => {
     fetchData();
   }, [user?.id]);
 
-  const runMLAnalysis = async () => {
-    if (lessonActivities.length === 0 && quizResults.length === 0) {
-      setError('Нет данных для анализа. Начните изучать курсы для получения аналитики.');
-      return;
-    }
-    setIsLoading(true);
-    setError(null);
-    setMlAnalysis('');
-    try {
-      const payload = {
-        lessonActivities: lessonActivities,
-        quizResults: quizResults,
-      };
-      const resp = await fetch('https://btnioyywtmuyacyjhsit.functions.supabase.co/ml-analyze', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      const rawText = await resp.text();
-      let result;
-      try {
-        result = JSON.parse(rawText);
-      } catch (e) {
-        setError(
-          'Ошибка парсинга результата ML-функции: ' +
-            (e.message || e) +
-            '\n\nRaw ответ:\n' +
-            rawText
-        );
-        setIsLoading(false);
-        return;
-      }
-      if (result.analysis) {
-        setMlAnalysis(result.analysis);
-        toast.success('Анализ завершен успешно!');
-      } else if (result.error) {
-        setError("Ошибка анализа: " + result.error + '\n\nRaw ответ:\n' + rawText);
-      } else {
-        setError("Сервис анализа временно недоступен\n\nRaw ответ:\n" + rawText);
-      }
-    } catch (e: any) {
-      setError('Ошибка: ' + (e.message || e.toString()));
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Вычисление средней длительности урока
-  // timeSpent должен быть числом, а не строкой
-  const times = lessonActivities.map(x => Number(x.timeSpent) || 0);
+  // Если нет ни одной завершённой активности, среднее время строго 0
+  const hasRealActivities = lessonActivities.length > 0;
+  const times = hasRealActivities
+    ? lessonActivities.map(x => Number(x.timeSpent) || 0)
+    : [];
   const avgTimePerLesson = times.length
     ? Math.round(times.reduce((sum, t) => sum + t, 0) / times.length)
     : 0;
-  // Для отладки: выводим массив времен в консоль
-  console.log('MLAnalytics: lessonActivities timeSpent:', times, 'Среднее:', avgTimePerLesson);
+
+  // Для отладки: выводим массив времен и общее кол-во в консоль
+  console.log(
+    'MLAnalytics: lessonActivities (for averaging timeSpent) =',
+    lessonActivities,
+    '\nМассив времен:', times,
+    'Среднее:', avgTimePerLesson
+  );
 
   const avgQuizScore = quizResults.length ?
     Math.round(quizResults.reduce((sum, x) => sum + (Number(x.score) || 0), 0) / quizResults.length) : 0;

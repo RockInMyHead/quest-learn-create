@@ -1,12 +1,13 @@
+
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { Button } from '@/components/ui/button';
-import { Clock, Target, BarChart3, CheckCircle, BookOpen } from 'lucide-react';
+import { BookOpen, BarChart3 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import AverageMetrics from './ml-analytics/AverageMetrics';
+import MLAnalysisSection from './ml-analytics/MLAnalysisSection';
+import MLErrorBlock from './ml-analytics/MLErrorBlock';
 
 const MLAnalytics = () => {
   const { user } = useAuth();
@@ -16,7 +17,6 @@ const MLAnalytics = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Функция для проверки валидности UUID
   const isValidUUID = (uuid: string) => {
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
     return uuidRegex.test(uuid);
@@ -27,63 +27,35 @@ const MLAnalytics = () => {
       console.log('MLAnalytics: Пользователь не авторизован или ID отсутствует');
       return;
     }
-
-    console.log('MLAnalytics: Пользователь найден, ID:', user.id);
-
-    // Проверяем валидность UUID пользователя
     if (!isValidUUID(user.id)) {
       setError('Ошибка: неверный формат ID пользователя. Пожалуйста, выйдите из системы и войдите заново.');
       console.error('MLAnalytics: Невалидный UUID пользователя:', user.id);
       return;
     }
-    
     const fetchData = async () => {
       setIsLoading(true);
       setError(null);
-      console.log('MLAnalytics: Начинаем загрузку данных из Supabase...');
-      
       try {
-        console.log('MLAnalytics: Получаем lesson_activities для user_id:', user.id);
-
         const { data: activities, error: actError } = await supabase
           .from('lesson_activities')
           .select('*')
           .eq('user_id', user.id)
           .order('completed_at', { ascending: true });
-
-        if (actError) {
-          console.error('MLAnalytics: Ошибка lesson_activities:', actError);
-          throw new Error(`Ошибка lesson_activities: ${actError.message}`);
-        }
-
-        console.log('MLAnalytics: lesson_activities получены:', activities);
-
+        if (actError) throw new Error(`Ошибка lesson_activities: ${actError.message}`);
         const { data: quizzes, error: quizError } = await supabase
           .from('quiz_results')
           .select('*')
           .eq('user_id', user.id)
           .order('completed_at', { ascending: true });
-
-        if (quizError) {
-          console.error('MLAnalytics: Ошибка quiz_results:', quizError);
-          throw new Error(`Ошибка quiz_results: ${quizError.message}`);
-        }
-
-        console.log('MLAnalytics: quiz_results получены:', quizzes);
-
-        // Диагностика: выводим свежие данные из БД
-        console.log('MLAnalytics [diagnostic]: lessonActivities из БД:', activities);
-        console.log('MLAnalytics [diagnostic]: quizResults из БД:', quizzes);
-
-        const processedActivities = (activities ?? []).map((item: any) => ({
+        if (quizError) throw new Error(`Ошибка quiz_results: ${quizError.message}`);
+        setLessonActivities((activities ?? []).map((item: any) => ({
           lessonId: item.lesson_id,
           courseId: item.course_id,
           timeSpent: item.time_spent,
           completedAt: item.completed_at,
           attempts: item.attempts,
-        }));
-
-        const processedQuizzes = (quizzes ?? []).map((item: any) => ({
+        })));
+        setQuizResults((quizzes ?? []).map((item: any) => ({
           lessonId: item.lesson_id,
           courseId: item.course_id,
           score: item.score,
@@ -91,16 +63,8 @@ const MLAnalytics = () => {
           totalQuestions: item.total_questions,
           timeSpent: item.time_spent,
           completedAt: item.completed_at,
-        }));
-
-        // Диагностика: данные после обработки
-        console.log('MLAnalytics [diagnostic]: Обработанные lessonActivities:', processedActivities);
-        console.log('MLAnalytics [diagnostic]: Обработанные quizResults:', processedQuizzes);
-
-        setLessonActivities(processedActivities);
-        setQuizResults(processedQuizzes);
+        })));
       } catch (e: any) {
-        console.error('MLAnalytics: Общая ошибка загрузки данных:', e);
         if (e.message.includes('invalid input syntax for type uuid')) {
           setError('Ошибка ID пользователя. Пожалуйста, очистите localStorage браузера, выйдите из системы и войдите заново.');
         } else if (e.name === 'TypeError' || e?.message?.toLowerCase().includes('failed')) {
@@ -120,30 +84,20 @@ const MLAnalytics = () => {
       setError('Нет данных для анализа. Начните изучать курсы для получения аналитики.');
       return;
     }
-
     setIsLoading(true);
     setError(null);
     setMlAnalysis('');
-    
     try {
-      console.log('Запускаем ML анализ...');
       const payload = {
         lessonActivities: lessonActivities,
         quizResults: quizResults,
       };
-
-      console.log('Отправляем данные:', payload);
-
-      // Используем полный URL edge-функции Supabase
       const resp = await fetch('https://btnioyywtmuyacyjhsit.functions.supabase.co/ml-analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
-
       const rawText = await resp.text();
-      console.log('Raw ML-анализ текст:', rawText);
-
       let result;
       try {
         result = JSON.parse(rawText);
@@ -157,9 +111,6 @@ const MLAnalytics = () => {
         setIsLoading(false);
         return;
       }
-
-      console.log('Результат анализа:', result);
-
       if (result.analysis) {
         setMlAnalysis(result.analysis);
         toast.success('Анализ завершен успешно!');
@@ -169,36 +120,18 @@ const MLAnalytics = () => {
         setError("Сервис анализа временно недоступен\n\nRaw ответ:\n" + rawText);
       }
     } catch (e: any) {
-      console.error('Ошибка ML анализа:', e);
       setError('Ошибка: ' + (e.message || e.toString()));
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Вычисляем метрики
   const avgTimePerLesson = lessonActivities.length ?
     Math.round(lessonActivities.reduce((sum, x) => sum + (Number(x.timeSpent) || 0), 0) / lessonActivities.length) : 0;
-  
   const avgQuizScore = quizResults.length ?
     Math.round(quizResults.reduce((sum, x) => sum + (Number(x.score) || 0), 0) / quizResults.length) : 0;
-  
   const efficiency = avgQuizScore > 0 && avgTimePerLesson > 0 ?
     Math.round(Math.min(100, (avgQuizScore / (avgTimePerLesson / 10)) * 10)) : 0;
-  
-  const overallGrade = avgQuizScore >= 90 ? 'A' : avgQuizScore >= 80 ? 'B' : avgQuizScore >= 70 ? 'C' : avgQuizScore >= 60 ? 'D' : 'F';
-
-  const getGradeColor = (grade: string) => {
-    switch (grade) {
-      case 'A': return 'bg-green-500';
-      case 'B': return 'bg-blue-500';
-      case 'C': return 'bg-yellow-500';
-      case 'D': return 'bg-orange-500';
-      case 'F': return 'bg-red-500';
-      default: return 'bg-gray-500';
-    }
-  };
-
   const hasData = lessonActivities.length > 0 || quizResults.length > 0;
 
   return (
@@ -229,76 +162,29 @@ const MLAnalytics = () => {
               </div>
             </div>
           )}
-
           {(hasData || isLoading) && !error && (
             <>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                <div className="text-center p-4 border rounded-lg">
-                  <Clock className="w-8 h-8 mx-auto mb-2 text-blue-500" />
-                  <p className="text-2xl font-bold">{avgTimePerLesson} мин</p>
-                  <p className="text-sm text-gray-600">Среднее время на урок</p>
-                </div>
-                <div className="text-center p-4 border rounded-lg">
-                  <Target className="w-8 h-8 mx-auto mb-2 text-green-500" />
-                  <p className="text-2xl font-bold">{avgQuizScore}%</p>
-                  <p className="text-sm text-gray-600">Средний балл тестов</p>
-                </div>
-                <div className="text-center p-4 border rounded-lg">
-                  <BarChart3 className="w-8 h-8 mx-auto mb-2 text-purple-500" />
-                  <p className="text-2xl font-bold">{efficiency}%</p>
-                  <p className="text-sm text-gray-600">Эффективность</p>
-                </div>
-              </div>
-
-              <div className="flex justify-between text-sm mb-2">
-                <span>Эффективность обучения</span>
-                <span>{efficiency}%</span>
-              </div>
-              <Progress value={efficiency} className="h-3" />
+              <AverageMetrics
+                avgTimePerLesson={avgTimePerLesson}
+                avgQuizScore={avgQuizScore}
+                efficiency={efficiency}
+              />
             </>
           )}
-
           {isLoading && (
             <div className="flex items-center justify-center py-8">
               <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mr-4"></div>
               <span>Анализируем ваши данные...</span>
             </div>
           )}
-
-          {error && (
-            <div className="mt-6 p-4 border rounded-lg bg-red-50 text-red-800">
-              <div className="font-medium mb-2">Ошибка:</div>
-              <div>{error}</div>
-              {error.includes('localStorage') && (
-                <div className="mt-3 text-sm">
-                  <p className="font-medium">Как исправить:</p>
-                  <ol className="list-decimal list-inside mt-1 space-y-1">
-                    <li>Откройте DevTools (F12)</li>
-                    <li>Перейдите в Application → Local Storage</li>
-                    <li>Удалите все данные или выполните localStorage.clear()</li>
-                    <li>Обновите страницу и войдите заново</li>
-                  </ol>
-                </div>
-              )}
-            </div>
-          )}
-
-          {mlAnalysis && !isLoading && (
-            <div className="mt-6 p-4 border rounded-lg bg-gray-50">
-              <h3 className="font-medium mb-2 flex items-center">
-                <CheckCircle className="w-4 h-4 mr-2 text-green-500" />
-                Рекомендации искусственного интеллекта
-              </h3>
-              <pre className="text-sm whitespace-pre-wrap">{mlAnalysis}</pre>
-            </div>
-          )}
-
-          {hasData && !isLoading && !error && (
-            <Button onClick={runMLAnalysis} variant="outline" className="w-full mt-4">
-              Запустить AI-анализ
-            </Button>
-          )}
-
+          <MLErrorBlock error={error} />
+          <MLAnalysisSection
+            mlAnalysis={mlAnalysis}
+            isLoading={isLoading}
+            hasData={hasData}
+            error={error}
+            onRunAnalysis={runMLAnalysis}
+          />
           {hasData && (
             <div className="mt-4 text-sm text-gray-500">
               Данных для анализа: {lessonActivities.length} активностей, {quizResults.length} результатов тестов

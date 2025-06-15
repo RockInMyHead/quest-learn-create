@@ -145,7 +145,7 @@ const MLAnalytics = () => {
         setError(
           'Ошибка парсинга результата ML-функции: ' +
             (e.message || e) +
-            '\nRaw ответ:\n' +
+            '\n\nRaw ответ:\n' +
             rawText
         );
         setIsLoading(false);
@@ -158,9 +158,9 @@ const MLAnalytics = () => {
         setMlAnalysis(result.analysis);
         toast.success('Анализ завершен успешно!');
       } else if (result.error) {
-        setError("Ошибка анализа: " + result.error);
+        setError("Ошибка анализа: " + result.error + '\n\nRaw ответ:\n' + rawText);
       } else {
-        setError("Сервис анализа временно недоступен");
+        setError("Сервис анализа временно недоступен\n\nRaw ответ:\n" + rawText);
       }
     } catch (e: any) {
       console.error('Ошибка ML анализа:', e);

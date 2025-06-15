@@ -127,8 +127,15 @@ const MLAnalytics = () => {
     }
   };
 
-  const avgTimePerLesson = lessonActivities.length ?
-    Math.round(lessonActivities.reduce((sum, x) => sum + (Number(x.timeSpent) || 0), 0) / lessonActivities.length) : 0;
+  // Вычисление средней длительности урока
+  // timeSpent должен быть числом, а не строкой
+  const times = lessonActivities.map(x => Number(x.timeSpent) || 0);
+  const avgTimePerLesson = times.length
+    ? Math.round(times.reduce((sum, t) => sum + t, 0) / times.length)
+    : 0;
+  // Для отладки: выводим массив времен в консоль
+  console.log('MLAnalytics: lessonActivities timeSpent:', times, 'Среднее:', avgTimePerLesson);
+
   const avgQuizScore = quizResults.length ?
     Math.round(quizResults.reduce((sum, x) => sum + (Number(x.score) || 0), 0) / quizResults.length) : 0;
   const efficiency = avgQuizScore > 0 && avgTimePerLesson > 0 ?

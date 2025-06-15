@@ -264,11 +264,12 @@ const CoursePlayer = () => {
   };
 
   const handleMarkCompleted = () => {
+    let timeSpent = 0;
     if (lessonStartTime && user) {
-      const timeSpent = Math.round((new Date().getTime() - lessonStartTime.getTime()) / (1000 * 60));
+      timeSpent = Math.round((new Date().getTime() - lessonStartTime.getTime()) / (1000 * 60));
       console.log(`Lesson ${currentLesson.id} marked as completed after ${timeSpent} minutes`);
     }
-    markLessonCompleted(course.id, currentLesson.id);
+    markLessonCompleted(course.id, currentLesson.id, timeSpent);
   };
 
   const handleQuizComplete = () => {
@@ -276,7 +277,7 @@ const CoursePlayer = () => {
       ? Math.round((new Date().getTime() - lessonStartTime.getTime()) / (1000 * 60))
       : 0;
     console.log(`Quiz completed, time spent: ${timeSpent} minutes`);
-    markLessonCompleted(course.id, currentLesson.id);
+    markLessonCompleted(course.id, currentLesson.id, timeSpent);
   };
 
   // icon для любого урока

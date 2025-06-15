@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -21,7 +20,7 @@ interface AuthContextValue {
   login: (email: string, password: string) => Promise<boolean>;
   register: (data: { name: string; email: string; password: string; role: UserRole }) => Promise<boolean>;
   enroll: (courseId: number) => void;
-  markLessonCompleted: (courseId: number, lessonId: number) => void;
+  markLessonCompleted: (courseId: number, lessonId: number, timeSpent?: number) => void;
   markQuizCompleted: (courseId: number, lessonId: number, score: number, correctAnswers: number, totalQuestions: number, timeSpent: number) => void;
   logout: () => void;
 }
@@ -133,7 +132,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.setItem('currentUser', JSON.stringify(updated));
   };
 
-  const markLessonCompleted = async (courseId: number, lessonId: number) => {
+  const markLessonCompleted = async (courseId: number, lessonId: number, timeSpent?: number) => {
     if (!user) return;
     
     const completedLessons = { ...user.completedLessons };
@@ -152,7 +151,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             user_id: user.id,
             lesson_id: lessonId,
             course_id: courseId,
-            time_spent: Math.floor(Math.random() * 30) + 10, // 10-40 минут
+            time_spent: typeof timeSpent === 'number' ? timeSpent : Math.floor(Math.random() * 30) + 10, // 10-40 минут
             attempts: 1
           });
         

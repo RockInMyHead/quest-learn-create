@@ -19,7 +19,14 @@ serve(async (req) => {
     
     let requestData;
     try {
-      requestData = await req.json();
+      const requestText = await req.text();
+      console.log('ML-analyze: Raw request text length:', requestText.length);
+      
+      if (!requestText.trim()) {
+        throw new Error('Пустой запрос');
+      }
+      
+      requestData = JSON.parse(requestText);
     } catch (e) {
       console.error('ML-analyze: Ошибка парсинга JSON запроса:', e);
       return new Response(JSON.stringify({
@@ -34,15 +41,13 @@ serve(async (req) => {
     
     console.log('ML-analyze: Данные получены:', {
       activitiesCount: lessonActivities?.length || 0,
-      quizResultsCount: quizResults?.length || 0,
-      activitiesData: JSON.stringify(lessonActivities?.slice(0, 2) || []),
-      quizData: JSON.stringify(quizResults?.slice(0, 2) || [])
+      quizResultsCount: quizResults?.length || 0
     });
 
     if (!openAIApiKey) {
       console.error('ML-analyze: OpenAI API key not found');
       return new Response(JSON.stringify({
-        error: "OpenAI API key не настроен в Supabase Edge Function Secrets"
+        error: "OpenAI API key не настроен"
       }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -69,9 +74,7 @@ serve(async (req) => {
     const validQuizResults = (quizResults || []).filter(q => 
       q && typeof q === 'object' && 
       q.lessonId && q.courseId && 
-      typeof q.score === 'number' && 
-      typeof q.correctAnswers === 'number' && 
-      typeof q.totalQuestions === 'number'
+      typeof q.score === 'number'
     );
 
     console.log('ML-analyze: Валидные данные:', {
@@ -79,34 +82,25 @@ serve(async (req) => {
       validQuizResultsCount: validQuizResults.length
     });
 
-    // Подготавливаем сводку для анализа
-    const activitiesSummary = validActivities.map((a, index) => 
-      `${index + 1}. Урок ${a.lessonId || 'N/A'}, Курс ${a.courseId || 'N/A'}, Время: ${a.timeSpent || 0} мин, Попыток: ${a.attempts || 1}`
-    ).join('\n');
+    // Создаем краткую сводку для анализа
+    let analysisText = "Анализ обучения:\n\n";
+    
+    if (validActivities.length > 0) {
+      const avgTime = Math.round(validActivities.reduce((sum, a) => sum + a.timeSpent, 0) / validActivities.length);
+      analysisText += `Уроков пройдено: ${validActivities.length}, среднее время: ${avgTime} мин\n`;
+    }
+    
+    if (validQuizResults.length > 0) {
+      const avgScore = Math.round(validQuizResults.reduce((sum, q) => sum + q.score, 0) / validQuizResults.length);
+      analysisText += `Тестов пройдено: ${validQuizResults.length}, средний балл: ${avgScore}%\n`;
+    }
 
-    const quizSummary = validQuizResults.map((q, index) => 
-      `${index + 1}. Урок ${q.lessonId || 'N/A'}, Курс ${q.courseId || 'N/A'}, Оценка: ${q.score || 0}%, Правильных: ${q.correctAnswers || 0}/${q.totalQuestions || 0}, Время: ${q.timeSpent || 0} мин`
-    ).join('\n');
+    // Простой промпт для OpenAI
+    const prompt = `${analysisText}
 
-    const summary = `Анализ обучения студента:
-
-Активность по урокам (${validActivities.length}):
-${activitiesSummary || 'Нет данных'}
-
-Результаты тестов (${validQuizResults.length}):
-${quizSummary || 'Нет данных'}`;
-
-    // Инструкция для GPT
-    const prompt = `${summary}
-
-Проанализируй эти данные обучения и дай краткие рекомендации:
-1. Какие темы требуют дополнительного внимания?
-2. Как можно улучшить результаты?
-
-Ответ должен быть кратким (не более 150 слов) и на русском языке.`;
+Дай краткие рекомендации (не более 100 слов) на русском языке для улучшения обучения.`;
 
     console.log('ML-analyze: Отправляем запрос к OpenAI');
-    console.log('ML-analyze: Prompt length:', prompt.length);
 
     const openAIResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -119,14 +113,14 @@ ${quizSummary || 'Нет данных'}`;
         messages: [
           {
             role: 'system',
-            content: 'Ты ассистент преподавателя. Анализируй данные обучения и давай краткие, практичные рекомендации на русском языке. Отвечай только текстом, без форматирования.'
+            content: 'Ты помощник преподавателя. Давай краткие рекомендации на русском языке без форматирования.'
           },
           {
             role: 'user',
             content: prompt
           }
         ],
-        max_tokens: 300,
+        max_tokens: 200,
         temperature: 0.7,
       }),
     });
@@ -137,7 +131,7 @@ ${quizSummary || 'Нет данных'}`;
       const errorText = await openAIResponse.text();
       console.error('ML-analyze: Ошибка OpenAI:', errorText);
       return new Response(JSON.stringify({
-        error: `OpenAI API error: ${openAIResponse.status} - ${errorText}`
+        error: `Ошибка OpenAI API: ${openAIResponse.status}`
       }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -147,34 +141,47 @@ ${quizSummary || 'Нет данных'}`;
     let openAIData;
     try {
       const responseText = await openAIResponse.text();
-      console.log('ML-analyze: Raw response text:', responseText.substring(0, 200) + '...');
+      console.log('ML-analyze: Raw OpenAI response length:', responseText.length);
+      
+      // Проверяем, что ответ не пустой
+      if (!responseText || responseText.trim().length === 0) {
+        throw new Error('Пустой ответ от OpenAI');
+      }
+      
       openAIData = JSON.parse(responseText);
+      console.log('ML-analyze: OpenAI data parsed successfully');
+      
     } catch (parseError) {
       console.error('ML-analyze: Ошибка парсинга ответа OpenAI:', parseError);
       return new Response(JSON.stringify({
-        error: `Ошибка обработки ответа от OpenAI: ${parseError.message}`
+        error: "Ошибка обработки ответа от AI сервиса"
       }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
-
-    console.log('ML-analyze: Успешно получен анализ');
 
     const analysis = openAIData?.choices?.[0]?.message?.content;
     
-    if (!analysis) {
-      console.error('ML-analyze: Пустой анализ в ответе:', JSON.stringify(openAIData));
+    if (!analysis || analysis.trim().length === 0) {
+      console.error('ML-analyze: Пустой анализ в ответе');
       return new Response(JSON.stringify({
-        error: 'Получен пустой ответ от OpenAI'
+        error: 'AI сервис вернул пустой ответ'
       }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
+    console.log('ML-analyze: Анализ успешно получен, длина:', analysis.length);
+
+    // Очищаем анализ от потенциально проблемных символов
+    const cleanAnalysis = analysis
+      .replace(/[\u0000-\u001F\u007F-\u009F]/g, '') // Удаляем управляющие символы
+      .trim();
+
     return new Response(JSON.stringify({
-      analysis: analysis.trim()
+      analysis: cleanAnalysis
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

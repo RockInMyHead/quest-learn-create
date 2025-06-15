@@ -9,6 +9,33 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      generated_lessons: {
+        Row: {
+          base_course_id: number
+          content: string
+          created_at: string
+          id: string
+          topic: string
+          user_id: string
+        }
+        Insert: {
+          base_course_id: number
+          content: string
+          created_at?: string
+          id?: string
+          topic: string
+          user_id: string
+        }
+        Update: {
+          base_course_id?: number
+          content?: string
+          created_at?: string
+          id?: string
+          topic?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       lesson_activities: {
         Row: {
           attempts: number | null
@@ -71,6 +98,33 @@ export type Database = {
           score?: number
           time_spent?: number
           total_questions?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_struggling_topics: {
+        Row: {
+          course_id: number
+          detected_at: string
+          id: string
+          resolved: boolean | null
+          topic: string
+          user_id: string
+        }
+        Insert: {
+          course_id: number
+          detected_at?: string
+          id?: string
+          resolved?: boolean | null
+          topic: string
+          user_id: string
+        }
+        Update: {
+          course_id?: number
+          detected_at?: string
+          id?: string
+          resolved?: boolean | null
+          topic?: string
           user_id?: string
         }
         Relationships: []

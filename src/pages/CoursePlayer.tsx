@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,6 +12,7 @@ import { useAuth } from '@/context/AuthContext';
 import { calculateCourseProgress, isLessonCompleted } from '@/utils/courseProgress';
 import { ArrowLeft, ArrowRight, BookOpen, CheckCircle, Play, FileText, Brain, Sparkles } from 'lucide-react';
 import { useGeneratedLessons } from '@/hooks/useGeneratedLessons'; // добавлен импорт
+import { differenceInDays, parseISO } from "date-fns";
 
 interface Lesson {
   id: number;
@@ -28,6 +28,7 @@ interface Lesson {
     correctAnswer: number;
     explanation: string;
   }[];
+  created_at?: string;
 }
 
 // Тип для AI-уроков
@@ -37,6 +38,8 @@ type AiLesson = {
   content: string;
   created_at: string;
 };
+
+const RECENT_DAYS = 7;
 
 const CoursePlayer = () => {
   const { id } = useParams<{ id: string }>();
@@ -183,9 +186,9 @@ const CoursePlayer = () => {
   // AI-уроки — подключение Supabase
   const { aiLessons, loading: aiLoading, refetch: refetchAiLessons } = useGeneratedLessons(courseId);
 
-  // Преобразование AI-уроков к формату современных уроков
+  // Определяем новые AI-уроки (созданы за последние RECENT_DAYS)
+  const now = new Date();
   const aiLessonsTransformed: Lesson[] = aiLessons.map((a, i) => ({
-    // id — делаем уникальным: сначала 10000 чтобы не пересекалось с обычными (можно использовать и строковый id, но для простоты type number)
     id: 10000 + i,
     title: a.topic,
     type: 'ai',
@@ -193,6 +196,7 @@ const CoursePlayer = () => {
     duration: undefined,
     imageUrl: undefined,
     quiz: undefined,
+    created_at: a.created_at
   }));
 
   // Объединяем список: Сначала обычные, затем AI-уроки (можно выставлять другое место)
@@ -345,37 +349,49 @@ const CoursePlayer = () => {
               </CardHeader>
               <CardContent className="p-0">
                 <div className="space-y-1">
-                  {allLessons.map((lesson, index) => (
-                    <button
-                      key={lesson.id}
-                      onClick={() => setCurrentLessonIndex(index)}
-                      className={`w-full text-left p-4 border-b border-gray-100 hover:bg-gray-50 transition-colors ${
-                        index === currentLessonIndex ? 'bg-blue-50 border-blue-200' : ''
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-3">
-                          {getLessonIcon(lesson.type)}
-                          <div>
-                            <div className="flex items-center space-x-2">
-                              <p className="font-medium text-sm">{lesson.title}</p>
-                              {lesson.type === 'ai' && (
-                                <Badge className="ml-1" variant="outline">
-                                  AI-урок
-                                </Badge>
+                  {allLessons.map((lesson, index) => {
+                    // Для AI-уроков визуальная подсветка, если lesson.created_at < RECENT_DAYS назад
+                    const isAI = lesson.type === "ai";
+                    let isRecentAi = false;
+                    if (isAI && lesson.created_at) {
+                      const daysAgo = differenceInDays(now, parseISO(lesson.created_at));
+                      isRecentAi = daysAgo <= RECENT_DAYS;
+                    }
+                    // Для обычных уроков выделять нечего (нет updated_at/created_at)
+                    return (
+                      <button
+                        key={lesson.id}
+                        onClick={() => setCurrentLessonIndex(index)}
+                        className={`w-full text-left p-4 border-b border-gray-100 hover:bg-gray-50 transition-colors
+                          ${index === currentLessonIndex ? 'bg-blue-50 border-blue-200' : ''}
+                          ${isAI && isRecentAi ? 'border-2 border-blue-400 bg-blue-100 animate-fade-in shadow-md' : ''}
+                        `}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-3">
+                            {getLessonIcon(lesson.type)}
+                            <div>
+                              <div className="flex items-center space-x-2">
+                                <p className="font-medium text-sm">{lesson.title}</p>
+                                {lesson.type === 'ai' && (
+                                  <span className={`ml-1 text-xs px-2 py-1 rounded font-semibold
+                                    ${isRecentAi ? "bg-blue-400 text-white animate-pulse" : "bg-blue-100 text-blue-700"}`}>
+                                    AI-урок{isRecentAi && " (новый)"}
+                                  </span>
+                                )}
+                              </div>
+                              {lesson.duration && (
+                                <p className="text-xs text-gray-500">{lesson.duration}</p>
                               )}
                             </div>
-                            {lesson.duration && (
-                              <p className="text-xs text-gray-500">{lesson.duration}</p>
-                            )}
                           </div>
+                          {isLessonCompleted(user, course.id, lesson.id) && (
+                            <CheckCircle className="w-4 h-4 text-green-500" />
+                          )}
                         </div>
-                        {isLessonCompleted(user, course.id, lesson.id) && (
-                          <CheckCircle className="w-4 h-4 text-green-500" />
-                        )}
-                      </div>
-                    </button>
-                  ))}
+                      </button>
+                    );
+                  })}
                   {aiLoading && (
                     <div className="text-xs text-blue-400 py-1 text-center animate-pulse">Загрузка AI-уроков...</div>
                   )}
@@ -497,4 +513,3 @@ const CoursePlayer = () => {
 };
 
 export default CoursePlayer;
-

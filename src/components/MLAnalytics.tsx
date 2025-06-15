@@ -8,6 +8,7 @@ import AverageMetrics from './ml-analytics/AverageMetrics';
 import MLAnalysisSection from './ml-analytics/MLAnalysisSection';
 import MLErrorBlock from './ml-analytics/MLErrorBlock';
 import StrugglingTopicsGenerator from "./ml-analytics/StrugglingTopicsGenerator";
+import { useStrugglingTopics } from "@/hooks/useStrugglingTopics"; // новинка
 
 const MLAnalytics = () => {
   const { user } = useAuth();
@@ -134,13 +135,8 @@ const MLAnalytics = () => {
     Math.round(Math.min(100, (avgQuizScore / (avgTimePerLesson / 10)) * 10)) : 0;
   const hasData = lessonActivities.length > 0 || quizResults.length > 0;
 
-  // Имитация анализа сложных тем (пример: если тест < 85%)
-  // Здесь можно сделать запрос к user_struggling_topics из Supabase 
-  // или вычислять на фронте на основе результатов quizResults
-  const strugglingTopics = quizResults.filter(q => q.score < 85).map(q => ({
-    topic: `Тема урока №${q.lessonId}`, // тут желательно брать настоящий title урока!
-    courseId: q.courseId
-  }));
+  // Новый способ определения сложных тем с пониженным порогом (score < 90)
+  const strugglingTopics = useStrugglingTopics(quizResults, 90);
 
   return (
     <div className="space-y-6">

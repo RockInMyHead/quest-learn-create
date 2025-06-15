@@ -4,167 +4,179 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
-import { Progress } from '@/components/ui/progress';
-import { CheckCircle, XCircle, RotateCcw } from 'lucide-react';
+import { CheckCircle, XCircle, Clock } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
+import { toast } from 'sonner';
 
 interface QuizQuestion {
   id: number;
   question: string;
   options: string[];
   correctAnswer: number;
-  explanation: string;
 }
 
 interface QuizProps {
   questions: QuizQuestion[];
-  onComplete: (score: number) => void;
+  lessonId: number;
+  courseId: number;
+  onComplete?: () => void;
 }
 
-const Quiz: React.FC<QuizProps> = ({ questions, onComplete }) => {
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [selectedAnswer, setSelectedAnswer] = useState<string>('');
-  const [answers, setAnswers] = useState<number[]>([]);
-  const [showResult, setShowResult] = useState(false);
-  const [quizCompleted, setQuizCompleted] = useState(false);
+const Quiz: React.FC<QuizProps> = ({ questions, lessonId, courseId, onComplete }) => {
+  const { markQuizCompleted } = useAuth();
+  const [currentQuestion, setCurrentQuestion] = useState(0);
+  const [selectedAnswers, setSelectedAnswers] = useState<{ [key: number]: number }>({});
+  const [showResults, setShowResults] = useState(false);
+  const [startTime] = useState(Date.now());
 
-  const currentQuestion = questions[currentQuestionIndex];
-  const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
-
-  const handleAnswerSelect = (value: string) => {
-    setSelectedAnswer(value);
+  const handleAnswerSelect = (questionId: number, answerIndex: number) => {
+    setSelectedAnswers(prev => ({
+      ...prev,
+      [questionId]: answerIndex
+    }));
   };
 
-  const handleNext = () => {
-    if (selectedAnswer) {
-      const newAnswers = [...answers, parseInt(selectedAnswer)];
-      setAnswers(newAnswers);
-
-      if (currentQuestionIndex < questions.length - 1) {
-        setCurrentQuestionIndex(currentQuestionIndex + 1);
-        setSelectedAnswer('');
-      } else {
-        // Quiz completed
-        const score = newAnswers.reduce((acc, answer, index) => {
-          return acc + (answer === questions[index].correctAnswer ? 1 : 0);
-        }, 0);
-        setQuizCompleted(true);
-        onComplete(Math.round((score / questions.length) * 100));
+  const calculateResults = () => {
+    let correct = 0;
+    questions.forEach(question => {
+      if (selectedAnswers[question.id] === question.correctAnswer) {
+        correct++;
       }
+    });
+    return {
+      correct,
+      total: questions.length,
+      percentage: Math.round((correct / questions.length) * 100)
+    };
+  };
+
+  const handleSubmit = async () => {
+    const results = calculateResults();
+    const timeSpent = Math.floor((Date.now() - startTime) / 1000 / 60); // в минутах
+    
+    // Сохраняем результат в Supabase
+    await markQuizCompleted(
+      courseId,
+      lessonId,
+      results.percentage,
+      results.correct,
+      results.total,
+      timeSpent
+    );
+    
+    setShowResults(true);
+    toast.success(`Тест завершен! Результат: ${results.percentage}%`);
+    
+    if (onComplete) {
+      onComplete();
     }
   };
 
-  const handleShowResult = () => {
-    setShowResult(!showResult);
+  const nextQuestion = () => {
+    if (currentQuestion < questions.length - 1) {
+      setCurrentQuestion(currentQuestion + 1);
+    }
   };
 
-  const handleRestart = () => {
-    setCurrentQuestionIndex(0);
-    setSelectedAnswer('');
-    setAnswers([]);
-    setShowResult(false);
-    setQuizCompleted(false);
+  const prevQuestion = () => {
+    if (currentQuestion > 0) {
+      setCurrentQuestion(currentQuestion - 1);
+    }
   };
 
-  if (quizCompleted) {
-    const score = answers.reduce((acc, answer, index) => {
-      return acc + (answer === questions[index].correctAnswer ? 1 : 0);
-    }, 0);
-    const percentage = Math.round((score / questions.length) * 100);
-
+  if (showResults) {
+    const results = calculateResults();
     return (
-      <Card className="w-full max-w-2xl mx-auto">
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl text-green-600">Тест завершен!</CardTitle>
-          <CardDescription>
-            Вы ответили правильно на {score} из {questions.length} вопросов
-          </CardDescription>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            {results.percentage >= 70 ? (
+              <CheckCircle className="w-6 h-6 text-green-500 mr-2" />
+            ) : (
+              <XCircle className="w-6 h-6 text-red-500 mr-2" />
+            )}
+            Результаты теста
+          </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="text-center">
-            <div className="text-4xl font-bold text-green-600 mb-2">{percentage}%</div>
-            <Progress value={percentage} className="h-4" />
-          </div>
-
-          <div className="flex flex-col sm:flex-row gap-4">
-            <Button onClick={handleShowResult} variant="outline" className="flex-1">
-              {showResult ? 'Скрыть результаты' : 'Показать результаты'}
-            </Button>
-            <Button onClick={handleRestart} variant="outline" className="flex-1">
-              <RotateCcw className="w-4 h-4 mr-2" />
-              Пройти заново
-            </Button>
-          </div>
-
-          {showResult && (
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Результаты:</h3>
-              {questions.map((question, index) => {
-                const userAnswer = answers[index];
-                const isCorrect = userAnswer === question.correctAnswer;
-                
-                return (
-                  <div key={question.id} className="border rounded-lg p-4">
-                    <div className="flex items-start space-x-2 mb-2">
-                      {isCorrect ? (
-                        <CheckCircle className="w-5 h-5 text-green-500 mt-0.5" />
-                      ) : (
-                        <XCircle className="w-5 h-5 text-red-500 mt-0.5" />
-                      )}
-                      <div className="flex-1">
-                        <p className="font-medium">{question.question}</p>
-                        <p className={`text-sm ${isCorrect ? 'text-green-600' : 'text-red-600'}`}>
-                          Ваш ответ: {question.options[userAnswer]}
-                        </p>
-                        {!isCorrect && (
-                          <p className="text-sm text-green-600">
-                            Правильный ответ: {question.options[question.correctAnswer]}
-                          </p>
-                        )}
-                        <p className="text-sm text-gray-600 mt-1">{question.explanation}</p>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
+        <CardContent>
+          <div className="text-center space-y-4">
+            <div className="text-4xl font-bold text-blue-600">
+              {results.percentage}%
             </div>
-          )}
+            <p className="text-lg">
+              Правильных ответов: {results.correct} из {results.total}
+            </p>
+            <div className="text-sm text-gray-600">
+              {results.percentage >= 70 ? 
+                'Отличная работа! Тест пройден успешно.' : 
+                'Попробуйте еще раз, чтобы улучшить результат.'
+              }
+            </div>
+          </div>
         </CardContent>
       </Card>
     );
   }
 
+  const question = questions[currentQuestion];
+  const progress = ((currentQuestion + 1) / questions.length) * 100;
+
   return (
-    <Card className="w-full max-w-2xl mx-auto">
+    <Card>
       <CardHeader>
-        <div className="flex justify-between items-center mb-2">
-          <CardTitle>Вопрос {currentQuestionIndex + 1} из {questions.length}</CardTitle>
-          <span className="text-sm text-gray-500">{Math.round(progress)}%</span>
-        </div>
-        <Progress value={progress} className="h-2" />
+        <CardTitle>Тест - Вопрос {currentQuestion + 1} из {questions.length}</CardTitle>
+        <CardDescription>
+          <div className="w-full bg-gray-200 rounded-full h-2">
+            <div 
+              className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        <CardDescription className="text-lg font-medium text-gray-900">
-          {currentQuestion.question}
-        </CardDescription>
+        <div>
+          <h3 className="text-lg font-medium mb-4">{question.question}</h3>
+          <RadioGroup
+            value={selectedAnswers[question.id]?.toString()}
+            onValueChange={(value) => handleAnswerSelect(question.id, parseInt(value))}
+          >
+            {question.options.map((option, index) => (
+              <div key={index} className="flex items-center space-x-2">
+                <RadioGroupItem value={index.toString()} id={`option-${index}`} />
+                <Label htmlFor={`option-${index}`} className="cursor-pointer">
+                  {option}
+                </Label>
+              </div>
+            ))}
+          </RadioGroup>
+        </div>
 
-        <RadioGroup value={selectedAnswer} onValueChange={handleAnswerSelect}>
-          {currentQuestion.options.map((option, index) => (
-            <div key={index} className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-gray-50">
-              <RadioGroupItem value={index.toString()} id={`option-${index}`} />
-              <Label htmlFor={`option-${index}`} className="flex-1 cursor-pointer">
-                {option}
-              </Label>
-            </div>
-          ))}
-        </RadioGroup>
-
-        <Button 
-          onClick={handleNext} 
-          disabled={!selectedAnswer}
-          className="w-full"
-        >
-          {currentQuestionIndex < questions.length - 1 ? 'Следующий вопрос' : 'Завершить тест'}
-        </Button>
+        <div className="flex justify-between">
+          <Button 
+            variant="outline" 
+            onClick={prevQuestion}
+            disabled={currentQuestion === 0}
+          >
+            Назад
+          </Button>
+          
+          {currentQuestion === questions.length - 1 ? (
+            <Button 
+              onClick={handleSubmit}
+              disabled={selectedAnswers[question.id] === undefined}
+            >
+              Завершить тест
+            </Button>
+          ) : (
+            <Button 
+              onClick={nextQuestion}
+              disabled={selectedAnswers[question.id] === undefined}
+            >
+              Далее
+            </Button>
+          )}
+        </div>
       </CardContent>
     </Card>
   );

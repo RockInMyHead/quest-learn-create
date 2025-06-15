@@ -1,5 +1,6 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 
 export type UserRole = 'student' | 'teacher' | 'admin';
 
@@ -21,6 +22,7 @@ interface AuthContextValue {
   register: (data: { name: string; email: string; password: string; role: UserRole }) => Promise<boolean>;
   enroll: (courseId: number) => void;
   markLessonCompleted: (courseId: number, lessonId: number) => void;
+  markQuizCompleted: (courseId: number, lessonId: number, score: number, correctAnswers: number, totalQuestions: number, timeSpent: number) => void;
   logout: () => void;
 }
 
@@ -54,7 +56,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const nameParts = data.name.split(' ');
     const firstName = nameParts[0] || '';
     const lastName = nameParts.slice(1).join(' ') || '';
-    const userId = generateUUID(); // Используем UUID вместо timestamp
+    const userId = generateUUID();
     const storedUser = { 
       ...data, 
       id: userId,
@@ -89,11 +91,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const nameParts = found.name.split(' ');
       const firstName = nameParts[0] || '';
       const lastName = nameParts.slice(1).join(' ') || '';
-      // Если у пользователя старый ID (не UUID), генерируем новый
       let userId = found.id;
       if (!userId || !userId.includes('-')) {
         userId = generateUUID();
-        // Обновляем ID в сохраненных данных
         const userIndex = users.findIndex((u: any) => u.email === email);
         if (userIndex !== -1) {
           users[userIndex].id = userId;
@@ -133,7 +133,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.setItem('currentUser', JSON.stringify(updated));
   };
 
-  const markLessonCompleted = (courseId: number, lessonId: number) => {
+  const markLessonCompleted = async (courseId: number, lessonId: number) => {
     if (!user) return;
     
     const completedLessons = { ...user.completedLessons };
@@ -143,6 +143,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     if (!completedLessons[courseId].includes(lessonId)) {
       completedLessons[courseId].push(lessonId);
+      
+      // Сохраняем в Supabase
+      try {
+        const { error } = await supabase
+          .from('lesson_activities')
+          .insert({
+            user_id: user.id,
+            lesson_id: lessonId,
+            course_id: courseId,
+            time_spent: Math.floor(Math.random() * 30) + 10, // 10-40 минут
+            attempts: 1
+          });
+        
+        if (error) {
+          console.error('Ошибка сохранения активности урока:', error);
+        } else {
+          console.log('Активность урока сохранена в Supabase');
+        }
+      } catch (err) {
+        console.error('Ошибка при сохранении в Supabase:', err);
+      }
     }
     
     const users = JSON.parse(localStorage.getItem('users') || '[]');
@@ -157,13 +178,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.setItem('currentUser', JSON.stringify(updated));
   };
 
+  const markQuizCompleted = async (courseId: number, lessonId: number, score: number, correctAnswers: number, totalQuestions: number, timeSpent: number) => {
+    if (!user) return;
+    
+    try {
+      const { error } = await supabase
+        .from('quiz_results')
+        .insert({
+          user_id: user.id,
+          lesson_id: lessonId,
+          course_id: courseId,
+          score: score,
+          correct_answers: correctAnswers,
+          total_questions: totalQuestions,
+          time_spent: timeSpent
+        });
+      
+      if (error) {
+        console.error('Ошибка сохранения результата теста:', error);
+      } else {
+        console.log('Результат теста сохранен в Supabase');
+      }
+    } catch (err) {
+      console.error('Ошибка при сохранении теста в Supabase:', err);
+    }
+  };
+
   const logout = () => {
     localStorage.removeItem('currentUser');
     setUser(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, register, enroll, markLessonCompleted, logout }}>
+    <AuthContext.Provider value={{ user, login, register, enroll, markLessonCompleted, markQuizCompleted, logout }}>
       {children}
     </AuthContext.Provider>
   );

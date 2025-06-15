@@ -231,26 +231,12 @@ const CoursePlayer = () => {
     markLessonCompleted(course.id, currentLesson.id);
   };
 
-  const handleQuizComplete = (score: number) => {
+  const handleQuizComplete = () => {
     const timeSpent = lessonStartTime 
       ? Math.round((new Date().getTime() - lessonStartTime.getTime()) / (1000 * 60))
       : 0;
     
-    console.log(`Quiz completed with score: ${score}%, time spent: ${timeSpent} minutes`);
-    
-    // Здесь можно сохранить данные о результатах теста
-    // Пример структуры данных для отправки в ML систему:
-    const quizData = {
-      lessonId: currentLesson.id,
-      courseId: course.id,
-      score,
-      timeSpent,
-      completedAt: new Date(),
-      correctAnswers: Math.round((score / 100) * (currentLesson.quiz?.length || 0)),
-      totalQuestions: currentLesson.quiz?.length || 0
-    };
-    
-    console.log('Quiz data for ML analysis:', quizData);
+    console.log(`Quiz completed, time spent: ${timeSpent} minutes`);
     
     markLessonCompleted(course.id, currentLesson.id);
   };
@@ -416,6 +402,8 @@ const CoursePlayer = () => {
                       {currentLesson.quiz && (
                         <Quiz 
                           questions={currentLesson.quiz} 
+                          lessonId={currentLesson.id}
+                          courseId={course.id}
                           onComplete={handleQuizComplete}
                         />
                       )}

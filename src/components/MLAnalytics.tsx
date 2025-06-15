@@ -25,22 +25,26 @@ const MLAnalytics = () => {
 
   useEffect(() => {
     if (!user?.id) {
-      console.log('Пользователь не авторизован или ID отсутствует');
+      console.log('MLAnalytics: Пользователь не авторизован или ID отсутствует');
       return;
     }
+
+    console.log('MLAnalytics: Пользователь найден, ID:', user.id);
 
     // Проверяем валидность UUID пользователя
     if (!isValidUUID(user.id)) {
       setError('Ошибка: неверный формат ID пользователя. Пожалуйста, выйдите из системы и войдите заново.');
-      console.error('Невалидный UUID пользователя:', user.id);
+      console.error('MLAnalytics: Невалидный UUID пользователя:', user.id);
       return;
     }
     
     const fetchData = async () => {
       setIsLoading(true);
       setError(null);
+      console.log('MLAnalytics: Начинаем загрузку данных из Supabase...');
+      
       try {
-        console.log('[Supabase] Получаем lesson_activities для user_id:', user.id);
+        console.log('MLAnalytics: Получаем lesson_activities для user_id:', user.id);
 
         const { data: activities, error: actError } = await supabase
           .from('lesson_activities')
@@ -49,11 +53,11 @@ const MLAnalytics = () => {
           .order('completed_at', { ascending: true });
 
         if (actError) {
-          console.error('Ошибка lesson_activities:', actError);
+          console.error('MLAnalytics: Ошибка lesson_activities:', actError);
           throw new Error(`Ошибка lesson_activities: ${actError.message}`);
         }
 
-        console.log('[Supabase] Получаем quiz_results для user_id:', user.id);
+        console.log('MLAnalytics: lesson_activities получены:', activities);
 
         const { data: quizzes, error: quizError } = await supabase
           .from('quiz_results')
@@ -62,9 +66,11 @@ const MLAnalytics = () => {
           .order('completed_at', { ascending: true });
 
         if (quizError) {
-          console.error('Ошибка quiz_results:', quizError);
+          console.error('MLAnalytics: Ошибка quiz_results:', quizError);
           throw new Error(`Ошибка quiz_results: ${quizError.message}`);
         }
+
+        console.log('MLAnalytics: quiz_results получены:', quizzes);
 
         const processedActivities = (activities ?? []).map((item: any) => ({
           lessonId: item.lesson_id,
@@ -84,9 +90,12 @@ const MLAnalytics = () => {
           completedAt: item.completed_at,
         }));
 
+        console.log('MLAnalytics: Обработанные данные - activities:', processedActivities.length, 'quizzes:', processedQuizzes.length);
+
         setLessonActivities(processedActivities);
         setQuizResults(processedQuizzes);
       } catch (e: any) {
+        console.error('MLAnalytics: Общая ошибка загрузки данных:', e);
         if (e.message.includes('invalid input syntax for type uuid')) {
           setError('Ошибка ID пользователя. Пожалуйста, очистите localStorage браузера, выйдите из системы и войдите заново.');
         } else if (e.name === 'TypeError' || e?.message?.toLowerCase().includes('failed')) {
@@ -94,7 +103,6 @@ const MLAnalytics = () => {
         } else {
           setError(e.message || 'Ошибка загрузки данных');
         }
-        console.error('Ошибка загрузки данных из Supabase:', e);
       } finally {
         setIsLoading(false);
       }

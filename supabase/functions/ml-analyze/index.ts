@@ -2,7 +2,6 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-// Получаем ключ OpenAI из секретов Supabase
 const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
 
 const corsHeaders = {
@@ -18,12 +17,26 @@ serve(async (req) => {
   try {
     console.log('ML-analyze: Получен запрос');
     
-    const requestData = await req.json();
+    let requestData;
+    try {
+      requestData = await req.json();
+    } catch (e) {
+      console.error('ML-analyze: Ошибка парсинга JSON запроса:', e);
+      return new Response(JSON.stringify({
+        error: "Некорректный формат данных в запросе"
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    
     const { lessonActivities, quizResults } = requestData;
     
     console.log('ML-analyze: Данные получены:', {
       activitiesCount: lessonActivities?.length || 0,
-      quizResultsCount: quizResults?.length || 0
+      quizResultsCount: quizResults?.length || 0,
+      activitiesData: JSON.stringify(lessonActivities?.slice(0, 2) || []),
+      quizData: JSON.stringify(quizResults?.slice(0, 2) || [])
     });
 
     if (!openAIApiKey) {
@@ -46,24 +59,42 @@ serve(async (req) => {
       });
     }
 
+    // Валидируем и очищаем данные
+    const validActivities = (lessonActivities || []).filter(a => 
+      a && typeof a === 'object' && 
+      a.lessonId && a.courseId && 
+      typeof a.timeSpent === 'number'
+    );
+
+    const validQuizResults = (quizResults || []).filter(q => 
+      q && typeof q === 'object' && 
+      q.lessonId && q.courseId && 
+      typeof q.score === 'number' && 
+      typeof q.correctAnswers === 'number' && 
+      typeof q.totalQuestions === 'number'
+    );
+
+    console.log('ML-analyze: Валидные данные:', {
+      validActivitiesCount: validActivities.length,
+      validQuizResultsCount: validQuizResults.length
+    });
+
     // Подготавливаем сводку для анализа
-    const activitiesSummary = (lessonActivities || []).map((a: any) => 
-      `- Урок ${a.lessonId}, Курс ${a.courseId}, Время: ${a.timeSpent} мин, Попыток: ${a.attempts || 1}`
+    const activitiesSummary = validActivities.map((a, index) => 
+      `${index + 1}. Урок ${a.lessonId || 'N/A'}, Курс ${a.courseId || 'N/A'}, Время: ${a.timeSpent || 0} мин, Попыток: ${a.attempts || 1}`
     ).join('\n');
 
-    const quizSummary = (quizResults || []).map((q: any) => 
-      `- Урок ${q.lessonId}, Курс ${q.courseId}, Оценка: ${q.score}%, Правильных: ${q.correctAnswers}/${q.totalQuestions}, Время: ${q.timeSpent} мин`
+    const quizSummary = validQuizResults.map((q, index) => 
+      `${index + 1}. Урок ${q.lessonId || 'N/A'}, Курс ${q.courseId || 'N/A'}, Оценка: ${q.score || 0}%, Правильных: ${q.correctAnswers || 0}/${q.totalQuestions || 0}, Время: ${q.timeSpent || 0} мин`
     ).join('\n');
 
-    const summary = `
-Анализ обучения студента:
+    const summary = `Анализ обучения студента:
 
-Активность по урокам (${lessonActivities?.length || 0}):
+Активность по урокам (${validActivities.length}):
 ${activitiesSummary || 'Нет данных'}
 
-Результаты тестов (${quizResults?.length || 0}):
-${quizSummary || 'Нет данных'}
-`;
+Результаты тестов (${validQuizResults.length}):
+${quizSummary || 'Нет данных'}`;
 
     // Инструкция для GPT
     const prompt = `${summary}
@@ -75,8 +106,9 @@ ${quizSummary || 'Нет данных'}
 Ответ должен быть кратким (не более 150 слов) и на русском языке.`;
 
     console.log('ML-analyze: Отправляем запрос к OpenAI');
+    console.log('ML-analyze: Prompt length:', prompt.length);
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const openAIResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${openAIApiKey}`,
@@ -87,7 +119,7 @@ ${quizSummary || 'Нет данных'}
         messages: [
           {
             role: 'system',
-            content: 'Ты ассистент преподавателя. Анализируй данные обучения и давай краткие, практичные рекомендации на русском языке.'
+            content: 'Ты ассистент преподавателя. Анализируй данные обучения и давай краткие, практичные рекомендации на русском языке. Отвечай только текстом, без форматирования.'
           },
           {
             role: 'user',
@@ -99,21 +131,46 @@ ${quizSummary || 'Нет данных'}
       }),
     });
 
-    console.log('ML-analyze: Получен ответ от OpenAI, статус:', response.status);
+    console.log('ML-analyze: Получен ответ от OpenAI, статус:', openAIResponse.status);
 
-    if (!response.ok) {
-      const errorText = await response.text();
+    if (!openAIResponse.ok) {
+      const errorText = await openAIResponse.text();
       console.error('ML-analyze: Ошибка OpenAI:', errorText);
-      throw new Error(`OpenAI API error: ${response.status} - ${errorText}`);
+      return new Response(JSON.stringify({
+        error: `OpenAI API error: ${openAIResponse.status} - ${errorText}`
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
-    const data = await response.json();
+    let openAIData;
+    try {
+      const responseText = await openAIResponse.text();
+      console.log('ML-analyze: Raw response text:', responseText.substring(0, 200) + '...');
+      openAIData = JSON.parse(responseText);
+    } catch (parseError) {
+      console.error('ML-analyze: Ошибка парсинга ответа OpenAI:', parseError);
+      return new Response(JSON.stringify({
+        error: `Ошибка обработки ответа от OpenAI: ${parseError.message}`
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     console.log('ML-analyze: Успешно получен анализ');
 
-    const analysis = data?.choices?.[0]?.message?.content;
+    const analysis = openAIData?.choices?.[0]?.message?.content;
     
     if (!analysis) {
-      throw new Error('Пустой ответ от OpenAI');
+      console.error('ML-analyze: Пустой анализ в ответе:', JSON.stringify(openAIData));
+      return new Response(JSON.stringify({
+        error: 'Получен пустой ответ от OpenAI'
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     return new Response(JSON.stringify({

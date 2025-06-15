@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -18,7 +17,7 @@ const Index = () => {
             <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6">
               Обучение нового поколения
               <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent block">
-                с EduPlatform
+                с STUDY
               </span>
             </h1>
             
@@ -180,7 +179,7 @@ const Index = () => {
             <div className="col-span-1 md:col-span-2">
               <div className="flex items-center space-x-2 mb-4">
                 <BookOpen className="h-8 w-8 text-blue-400" />
-                <span className="text-2xl font-bold">EduPlatform</span>
+                <span className="text-2xl font-bold">STUDY</span>
               </div>
               <p className="text-gray-400 max-w-md">
                 Современная платформа для онлайн-обучения, которая помогает людям развиваться и достигать новых высот в карьере.

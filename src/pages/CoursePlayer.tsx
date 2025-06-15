@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,7 +11,8 @@ import FormattedContent from '@/components/FormattedContent';
 import { courses } from '@/data/courses';
 import { useAuth } from '@/context/AuthContext';
 import { calculateCourseProgress, isLessonCompleted } from '@/utils/courseProgress';
-import { ArrowLeft, ArrowRight, BookOpen, CheckCircle, Play, FileText, Brain } from 'lucide-react';
+import { ArrowLeft, ArrowRight, BookOpen, CheckCircle, Play, FileText, Brain, Sparkles } from 'lucide-react';
+import { useGeneratedLessons } from '@/hooks/useGeneratedLessons'; // добавлен импорт
 
 interface Lesson {
   id: number;
@@ -28,13 +30,23 @@ interface Lesson {
   }[];
 }
 
+// Тип для AI-уроков
+type AiLesson = {
+  id: string;
+  topic: string;
+  content: string;
+  created_at: string;
+};
+
 const CoursePlayer = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user, markLessonCompleted } = useAuth();
 
   const course = courses.find((c) => c.id === Number(id));
-  
+  const courseId = course?.id || 0;
+
+  // СТАТИЧЕСКИЕ официальные уроки курса
   const [lessons] = useState<Lesson[]>([
     {
       id: 1,
@@ -168,13 +180,43 @@ const CoursePlayer = () => {
     }
   ]);
 
+  // AI-уроки — подключение Supabase
+  const { aiLessons, loading: aiLoading, refetch: refetchAiLessons } = useGeneratedLessons(courseId);
+
+  // Преобразование AI-уроков к формату современных уроков
+  const aiLessonsTransformed: Lesson[] = aiLessons.map((a, i) => ({
+    // id — делаем уникальным: сначала 10000 чтобы не пересекалось с обычными (можно использовать и строковый id, но для простоты type number)
+    id: 10000 + i,
+    title: a.topic,
+    type: 'ai',
+    content: a.content,
+    duration: undefined,
+    imageUrl: undefined,
+    quiz: undefined,
+  }));
+
+  // Объединяем список: Сначала обычные, затем AI-уроки (можно выставлять другое место)
+  const allLessons: Lesson[] = [
+    ...lessons,
+    ...aiLessonsTransformed
+  ];
+
+  // Сохраняем info о том, какой урок сейчас активен
   const [currentLessonIndex, setCurrentLessonIndex] = useState(0);
   const [lessonStartTime, setLessonStartTime] = useState<Date | null>(null);
-  const currentLesson = lessons[currentLessonIndex];
-  const progressPercentage = calculateCourseProgress(user, Number(id), lessons.length);
+  const currentLesson = allLessons[currentLessonIndex];
+  const progressPercentage = calculateCourseProgress(user, Number(id), allLessons.length);
 
-  // Отслеживание времени начала урока
-  React.useEffect(() => {
+  // При добавлении новых AI-уроков если мы были на последнем — корректируем позицию
+  useEffect(() => {
+    if (currentLessonIndex >= allLessons.length) {
+      setCurrentLessonIndex(allLessons.length - 1);
+    }
+    // eslint-disable-next-line
+  }, [allLessons.length]);
+
+  // Отслеживаем время начала урока
+  useEffect(() => {
     setLessonStartTime(new Date());
   }, [currentLessonIndex]);
 
@@ -202,14 +244,11 @@ const CoursePlayer = () => {
   }
 
   const handleNextLesson = () => {
-    // Записываем время завершения урока
     if (lessonStartTime && user) {
       const timeSpent = Math.round((new Date().getTime() - lessonStartTime.getTime()) / (1000 * 60));
       console.log(`Lesson ${currentLesson.id} completed in ${timeSpent} minutes`);
-      // Здесь можно сохранить данные о времени изучения урока
     }
-    
-    if (currentLessonIndex < lessons.length - 1) {
+    if (currentLessonIndex < allLessons.length - 1) {
       setCurrentLessonIndex(currentLessonIndex + 1);
     }
   };
@@ -221,26 +260,22 @@ const CoursePlayer = () => {
   };
 
   const handleMarkCompleted = () => {
-    // Записываем время завершения урока
     if (lessonStartTime && user) {
       const timeSpent = Math.round((new Date().getTime() - lessonStartTime.getTime()) / (1000 * 60));
       console.log(`Lesson ${currentLesson.id} marked as completed after ${timeSpent} minutes`);
-      // Здесь можно сохранить данные о времени изучения урока
     }
-    
     markLessonCompleted(course.id, currentLesson.id);
   };
 
   const handleQuizComplete = () => {
-    const timeSpent = lessonStartTime 
+    const timeSpent = lessonStartTime
       ? Math.round((new Date().getTime() - lessonStartTime.getTime()) / (1000 * 60))
       : 0;
-    
     console.log(`Quiz completed, time spent: ${timeSpent} minutes`);
-    
     markLessonCompleted(course.id, currentLesson.id);
   };
 
+  // icon для любого урока
   const getLessonIcon = (type: string) => {
     switch (type) {
       case 'video':
@@ -251,11 +286,14 @@ const CoursePlayer = () => {
         return <FileText className="w-4 h-4" />;
       case 'theory':
         return <Brain className="w-4 h-4" />;
+      case 'ai':
+        return <Sparkles className="w-4 h-4 text-blue-500" />;
       default:
         return <BookOpen className="w-4 h-4" />;
     }
   };
 
+  // title для типа урока
   const getLessonTypeName = (type: string) => {
     switch (type) {
       case 'video':
@@ -266,6 +304,8 @@ const CoursePlayer = () => {
         return 'Тест';
       case 'theory':
         return 'Теория';
+      case 'ai':
+        return 'AI-урок';
       default:
         return 'Урок';
     }
@@ -274,21 +314,18 @@ const CoursePlayer = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
-      
       <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
         <div className="mb-6">
-          <Button 
-            variant="ghost" 
+          <Button
+            variant="ghost"
             onClick={() => navigate('/dashboard')}
             className="mb-4"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
             Назад к курсам
           </Button>
-          
           <h1 className="text-3xl font-bold text-gray-900 mb-2">{course.title}</h1>
           <p className="text-gray-600">Преподаватель: {course.teacher}</p>
-          
           <div className="mt-4">
             <div className="flex justify-between text-sm mb-2">
               <span>Прогресс курса</span>
@@ -297,19 +334,18 @@ const CoursePlayer = () => {
             <Progress value={progressPercentage} className="h-3" />
           </div>
         </div>
-
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           <div className="lg:col-span-1">
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg">Содержание курса</CardTitle>
                 <CardDescription>
-                  {user?.completedLessons[course.id]?.length || 0} из {lessons.length} уроков завершено
+                  {user?.completedLessons[course.id]?.length || 0} из {allLessons.length} уроков завершено
                 </CardDescription>
               </CardHeader>
               <CardContent className="p-0">
                 <div className="space-y-1">
-                  {lessons.map((lesson, index) => (
+                  {allLessons.map((lesson, index) => (
                     <button
                       key={lesson.id}
                       onClick={() => setCurrentLessonIndex(index)}
@@ -321,8 +357,17 @@ const CoursePlayer = () => {
                         <div className="flex items-center space-x-3">
                           {getLessonIcon(lesson.type)}
                           <div>
-                            <p className="font-medium text-sm">{lesson.title}</p>
-                            <p className="text-xs text-gray-500">{lesson.duration}</p>
+                            <div className="flex items-center space-x-2">
+                              <p className="font-medium text-sm">{lesson.title}</p>
+                              {lesson.type === 'ai' && (
+                                <Badge className="ml-1" variant="outline">
+                                  AI-урок
+                                </Badge>
+                              )}
+                            </div>
+                            {lesson.duration && (
+                              <p className="text-xs text-gray-500">{lesson.duration}</p>
+                            )}
                           </div>
                         </div>
                         {isLessonCompleted(user, course.id, lesson.id) && (
@@ -331,11 +376,13 @@ const CoursePlayer = () => {
                       </div>
                     </button>
                   ))}
+                  {aiLoading && (
+                    <div className="text-xs text-blue-400 py-1 text-center animate-pulse">Загрузка AI-уроков...</div>
+                  )}
                 </div>
               </CardContent>
             </Card>
           </div>
-
           <div className="lg:col-span-3">
             <Card>
               <CardHeader>
@@ -349,6 +396,9 @@ const CoursePlayer = () => {
                       <Badge variant="secondary" className="mt-2">
                         {getLessonTypeName(currentLesson.type)}
                       </Badge>
+                      {currentLesson.type === 'ai' && (
+                        <span className="ml-2 text-xs text-blue-500">Сгенерирован AI</span>
+                      )}
                     </CardDescription>
                   </div>
                   {isLessonCompleted(user, course.id, currentLesson.id) && (
@@ -358,13 +408,22 @@ const CoursePlayer = () => {
               </CardHeader>
               <CardContent>
                 <div className="mb-8">
-                  {currentLesson.type === 'video' && (
+
+                  {/* Для AI-урока отображаем MarkDown-контент */}
+                  {currentLesson.type === 'ai' ? (
+                    <div>
+                      <FormattedContent content={currentLesson.content} />
+                      <div className="mt-4 text-xs text-gray-400">
+                        AI-урок создан специально для вас на основе ваших затруднений
+                      </div>
+                    </div>
+                  ) : currentLesson.type === 'video' ? (
                     <>
                       <div className="aspect-video bg-gray-900 rounded-lg flex items-center justify-center mb-4 relative overflow-hidden">
                         {currentLesson.imageUrl ? (
                           <>
-                            <img 
-                              src={currentLesson.imageUrl} 
+                            <img
+                              src={currentLesson.imageUrl}
                               alt={currentLesson.title}
                               className="w-full h-full object-cover opacity-70"
                             />
@@ -385,23 +444,11 @@ const CoursePlayer = () => {
                         )}
                       </div>
                     </>
-                  )}
-
-                  {currentLesson.type === 'theory' && currentLesson.imageUrl && (
-                    <div className="mb-6">
-                      <img 
-                        src={currentLesson.imageUrl} 
-                        alt={currentLesson.title}
-                        className="w-full h-64 object-cover rounded-lg"
-                      />
-                    </div>
-                  )}
-
-                  {currentLesson.type === 'quiz' ? (
+                  ) : currentLesson.type === 'quiz' ? (
                     <div className="mb-6">
                       {currentLesson.quiz && (
-                        <Quiz 
-                          questions={currentLesson.quiz} 
+                        <Quiz
+                          questions={currentLesson.quiz}
                           lessonId={currentLesson.id}
                           courseId={course.id}
                           onComplete={handleQuizComplete}
@@ -412,7 +459,6 @@ const CoursePlayer = () => {
                     <FormattedContent content={currentLesson.content} />
                   )}
                 </div>
-
                 {currentLesson.type !== 'quiz' && !isLessonCompleted(user, course.id, currentLesson.id) && (
                   <div className="mb-6">
                     <Button onClick={handleMarkCompleted} className="w-full">
@@ -421,7 +467,6 @@ const CoursePlayer = () => {
                     </Button>
                   </div>
                 )}
-
                 <div className="flex justify-between items-center pt-6 border-t border-gray-200">
                   <Button
                     variant="outline"
@@ -431,14 +476,12 @@ const CoursePlayer = () => {
                     <ArrowLeft className="w-4 h-4 mr-2" />
                     Предыдущий урок
                   </Button>
-                  
                   <div className="text-sm text-gray-500">
-                    {currentLessonIndex + 1} из {lessons.length}
+                    {currentLessonIndex + 1} из {allLessons.length}
                   </div>
-                  
                   <Button
                     onClick={handleNextLesson}
-                    disabled={currentLessonIndex === lessons.length - 1}
+                    disabled={currentLessonIndex === allLessons.length - 1}
                   >
                     Следующий урок
                     <ArrowRight className="w-4 h-4 ml-2" />
@@ -454,3 +497,4 @@ const CoursePlayer = () => {
 };
 
 export default CoursePlayer;
+

@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -72,6 +71,10 @@ const MLAnalytics = () => {
 
         console.log('MLAnalytics: quiz_results получены:', quizzes);
 
+        // Диагностика: выводим свежие данные из БД
+        console.log('MLAnalytics [diagnostic]: lessonActivities из БД:', activities);
+        console.log('MLAnalytics [diagnostic]: quizResults из БД:', quizzes);
+
         const processedActivities = (activities ?? []).map((item: any) => ({
           lessonId: item.lesson_id,
           courseId: item.course_id,
@@ -90,7 +93,9 @@ const MLAnalytics = () => {
           completedAt: item.completed_at,
         }));
 
-        console.log('MLAnalytics: Обработанные данные - activities:', processedActivities.length, 'quizzes:', processedQuizzes.length);
+        // Диагностика: данные после обработки
+        console.log('MLAnalytics [diagnostic]: Обработанные lessonActivities:', processedActivities);
+        console.log('MLAnalytics [diagnostic]: Обработанные quizResults:', processedQuizzes);
 
         setLessonActivities(processedActivities);
         setQuizResults(processedQuizzes);
@@ -227,13 +232,7 @@ const MLAnalytics = () => {
 
           {(hasData || isLoading) && !error && (
             <>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-                <div className="text-center p-4 border rounded-lg">
-                  <div className={`w-16 h-16 ${getGradeColor(overallGrade)} text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-2`}>
-                    {overallGrade}
-                  </div>
-                  <p className="text-sm font-medium">Общая оценка</p>
-                </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                 <div className="text-center p-4 border rounded-lg">
                   <Clock className="w-8 h-8 mx-auto mb-2 text-blue-500" />
                   <p className="text-2xl font-bold">{avgTimePerLesson} мин</p>

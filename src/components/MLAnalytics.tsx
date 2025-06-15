@@ -129,7 +129,8 @@ const MLAnalytics = () => {
 
       console.log('Отправляем данные:', payload);
 
-      const resp = await fetch('/functions/ml-analyze', {
+      // Используем полный URL edge-функции Supabase
+      const resp = await fetch('https://btnioyywtmuyacyjhsit.functions.supabase.co/ml-analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),

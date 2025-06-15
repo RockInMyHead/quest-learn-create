@@ -17,7 +17,7 @@ import { useGeneratedLessons } from '@/hooks/useGeneratedLessons'; // добав
 interface Lesson {
   id: number;
   title: string;
-  type: 'video' | 'text' | 'quiz' | 'theory';
+  type: 'video' | 'text' | 'quiz' | 'theory' | 'ai';
   content: string;
   duration?: string;
   imageUrl?: string;
